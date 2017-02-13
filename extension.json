@@ -1,0 +1,44 @@
+{
+	"name": "ExportForTranslation",
+	"version": "0.1.0",
+	"author": [
+		"Dror S. [FFS] ([http://www.kolzchut.org.il Kol-Zchut])"
+	],
+	"url": "https://github.com/kolzchut/mediawiki-extensions-ExportForTranslation",
+	"descriptionmsg": "exportfortranslation-desc",
+	"license-name": "GPL-2.0+",
+	"type": "other",
+	"AutoloadClasses": {
+		"ExportForTranslation": "ExportForTranslation.body.php",
+		"ExportForTranslationHooks": "ExportForTranslation.hooks.php",
+		"SpecialExportForTranslation": "specials/SpecialExportForTranslation.php"
+	},
+	"config": {
+		"ExportForTranslationEnableFoo": true
+	},
+	"AvailableRights": [
+		"export-for-translation"
+	],
+	"GroupPermissions": {
+		"sysop": {
+			"export-for-translation": true
+		}
+	},
+	"ExtensionMessagesFiles": {
+		"ExportForTranslationAlias": "ExportForTranslation.i18n.alias.php"
+	},
+	"Hooks": {
+		"NameOfHook": [
+			"ExportForTranslationHooks::onNameOfHook"
+		]
+	},
+	"MessagesDirs": {
+		"ExportForTranslation": [
+			"i18n"
+		]
+	},
+	"SpecialPages": {
+		"ExportForTranslation": "SpecialExportForTranslation"
+	},
+	"manifest_version": 1
+}
