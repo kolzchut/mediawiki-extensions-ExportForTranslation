@@ -3,18 +3,6 @@
 
 class ExportForTranslation {
 
-	// @TODO Maybe: try to mark only the parts of text a translator should touch?
-
-	/**
-	 * @TODO 1. Make this into a MediaWiki extension:
-	 * @TODO 1.1. Move code into extension format [DONE!]
-	 * @TODO 1.2. Load lists from predetermined wiki pages [DONE!]
-	 * @TODO 1.3. Load list of "real titles" directly from the wiki's language links?
-	 * @TODO 1.4. Spit output back out as a file [DONE!]
-	 * @TODO 1.5. Add link to editor toolbar
-	 * @TODO 1.6 Add page title, Page ID, revision number & revision date to file
-	 */
-
 	private static $textTemplates = [
 		'header'                          => '/\=\=\s*(%s)\s*\=\=/',
 		'header-replacement'              => '== %s == <!-- $1 -->',
