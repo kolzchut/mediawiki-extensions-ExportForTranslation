@@ -6,7 +6,7 @@
 	"exportfortranslation-desc": "ייצוא דפים בפורמט לתרגום מחוץ לויקי - כולל תרגום אוטומטי של כותרות בהתאם לקישורי שפה",
 	"exportfortranslation-special-title": "ייצוא לתרגום",
 	"exportfortranslation-special-text": "דף זה מאפשר להכין ערכים לתרגום חיצוני.",
-	"exportfortranslation": "תרגום לייצוא",
+	"exportfortranslation": "ייצוא לתרגום",
 	"exportfortranslation-title-non-existant": "לא קיים ערך בשם \"$1\".",
 	"exportform-field-title": "דף לייצוא",
 	"exportform-field-title-placeholder": "אנא הקלידו שם דף",
