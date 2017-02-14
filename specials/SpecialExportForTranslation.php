@@ -18,6 +18,14 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	 *  [[Special:HelloWorld/subpage]].
 	 */
 	public function execute( $sub ) {
+		if ( $sub !== null && !$this->getRequest()->wasPosted() ) {
+			// This is a GET request to export a page. Check title validity:
+			$title =  Title::newFromText( $sub );
+			if ( $title->exists() ) {
+				$this->sendFile( $title );
+				return;
+			}
+		}
 		$out = $this->getOutput();
 		$out->setPageTitle( $this->msg( 'exportfortranslation-special-title' ) );
 
@@ -41,18 +49,23 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	 * @return bool|Status
 	 */
 	public function onSubmit( array $formData ) {
+		// Note: validation of title existance is already done as part of HTMLTitleTextField
+		$this->sendFile( $formData['title'] );
 
-		// Validation of title existance is already done as part of HTMLTitleTextField
-		// We check for emptiness for GET requests
-		if ( empty( $formData['title'] ) ) {
-			return false;
-		}
+		return true;
+	}
 
+	/**
+	 * @param Title|string $pageName
+	 *
+	 * @return bool
+	 */
+	protected function sendFile( $pageName ) {
 		$request = $this->getRequest();
 		$response = $request->response();
 		$this->getOutput()->disable();
 
-		$title = Title::newFromText( $formData['title'] );
+		$title = ( $pageName instanceof Title ) ? $pageName : Title::newFromText( $pageName );
 		$wikitext = ExportForTranslation::export( $title->getFullText() );
 		$filename = $title->getDBkey() . '-' . wfTimestampNow() . '.txt';
 
