@@ -14,14 +14,12 @@ class ExportForTranslation {
 		'title-transclusion-replacement'  => '{{הטמעת כותרת | %s#'
 	];
 
-	private static $titles, $headers;
-
 	/**
 	 * @param Title $title
 	 *
 	 * @return null|string
 	 */
-	private static function loadPageContent( $title ) {
+	private static function loadPageContent( Title $title ) {
 		if ( $title->exists() ) {
 			$page = WikiPage::factory( $title );
 			$content = $page->getRevision()->getContent();
@@ -70,6 +68,13 @@ class ExportForTranslation {
 		return self::$textTemplates[ $type ];
 	}
 
+	/**
+	 * @param string $needle
+	 * @param int|string $key
+	 * @param string $type
+	 *
+	 * @return bool
+	 */
 	private static function doParamReplacement( &$needle, $key, $type ) {
 		$template = self::getTemplateForType( $type );
 		$needle = sprintf( $template, $needle );

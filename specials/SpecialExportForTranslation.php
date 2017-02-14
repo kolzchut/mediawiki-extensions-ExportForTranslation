@@ -7,8 +7,6 @@
  */
 
 class SpecialExportForTranslation extends FormSpecialPage {
-	private $doExport;
-
 	public function __construct() {
 		parent::__construct( 'ExportForTranslation', 'export-for-translation' );
 	}
@@ -20,7 +18,6 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	 *  [[Special:HelloWorld/subpage]].
 	 */
 	public function execute( $sub ) {
-		$this->doExport = false;
 		$out = $this->getOutput();
 		$out->setPageTitle( $this->msg( 'exportfortranslation-special-title' ) );
 
