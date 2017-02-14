@@ -44,25 +44,23 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	 * @return bool|Status
 	 */
 	public function onSubmit( array $formData ) {
+
+		// Validation of title existance is already done as part of HTMLTitleTextField
+		// We check for emptiness for GET requests
 		if ( empty( $formData['title'] ) ) {
 			return false;
-		}
-
-		$title = Title::newFromText( $formData['title'] );
-		if ( !$title->exists() ) {
-			return Status::newFatal( 'exportfortranslation-title-non-existant', $title->getFullText() );
 		}
 
 		$request = $this->getRequest();
 		$response = $request->response();
 		$this->getOutput()->disable();
 
-		$response->header( "Content-type: text/plain; charset=utf-8" );
-		$response->header( "X-Robots-Tag: noindex,nofollow" );
-
+		$title = Title::newFromText( $formData['title'] );
 		$wikitext = ExportForTranslation::export( $title->getFullText() );
 		$filename = $title->getDBkey() . '-' . wfTimestampNow() . '.txt';
 
+		$response->header( "Content-type: text/plain; charset=utf-8" );
+		$response->header( "X-Robots-Tag: noindex,nofollow" );
 		$response->header( "Content-disposition: attachment;filename={$filename}" );
 		$response->header( 'Cache-Control: no-cache, no-store, max-age=0, must-revalidate' );
 		$response->header( 'Pragma: no-cache' );
@@ -81,13 +79,14 @@ class SpecialExportForTranslation extends FormSpecialPage {
 		return 'exportfortranslation-special';
 	}
 
-	function getFormFields() {
+	protected function getFormFields() {
 		$formDescriptor = [
 			'title' => [
 				'type' => 'title',
 				'label-message' => 'exportform-field-title',
 				'placeholder' => $this->msg( 'exportform-field-title-placeholder' )->text(),
 				'required' => true,
+				'exists' => true
 
 			]
 		];
