@@ -1,4 +1,19 @@
 {
+	"name": "mediawiki/export-for-translation",
+	"type": "mediawiki-extension",
+	"description": "MediaWiki extension to export articles for translation by freelancers",
+	"keywords": [
+		"MediaWiki",
+		"Translation"
+	],
+	"homepage": "https://github.com/kolzchut/mediawiki-extensions-ExportForTranslation",
+	"license": "GPL-2.0+",
+	"authors": [
+		{
+			"name": "Dror S. [ffs] for Kol-Zchut",
+			"email": "FreedomFighterSparrow@gmail.com"
+		}
+	],
 	"require-dev": {
 		"jakub-onderka/php-parallel-lint": "0.9.2",
 		"mediawiki/mediawiki-codesniffer": "0.7.2"
