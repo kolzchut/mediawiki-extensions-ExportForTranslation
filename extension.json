@@ -13,9 +13,6 @@
 		"ExportForTranslationHooks": "ExportForTranslation.hooks.php",
 		"SpecialExportForTranslation": "specials/SpecialExportForTranslation.php"
 	},
-	"config": {
-		"ExportForTranslationEnableFoo": true
-	},
 	"AvailableRights": [
 		"export-for-translation"
 	],
@@ -28,8 +25,8 @@
 		"ExportForTranslationAlias": "ExportForTranslation.i18n.alias.php"
 	},
 	"Hooks": {
-		"NameOfHook": [
-			"ExportForTranslationHooks::onNameOfHook"
+		"SkinTemplateNavigation": [
+			"ExportForTranslationHooks::onSkinTemplateNavigation"
 		]
 	},
 	"MessagesDirs": {
