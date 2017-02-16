@@ -46,6 +46,7 @@ class ExportForTranslation {
 		// Prepare titles transformation in transclusions
 		$wikitext = self::doTransformation( $wikitext, self::$titleLines, 'title-transclusion' );
 
+		$wikitext = self::getArticleMetadata( $title ) . $wikitext;
 
 		return $wikitext;
 	}
@@ -55,7 +56,22 @@ class ExportForTranslation {
 		self::$titleLines = explode( "\n", wfMessage( 'exportfortranslation-titles-list' )->text() );
 	}
 
+	private static function getArticleMetadata( Title $title ) {
+		$hebrewName = $title->getFullText();
+		$metadata = 'שם הערך בעברית: ' . $hebrewName . PHP_EOL;
+		$hebrewNameKey = array_search( $hebrewName, self::$titleLines );
+		$arabicName = self::$titleLines[$hebrewNameKey+1];
+		$metadata .= 'שם הערך בערבית: ' . $arabicName . PHP_EOL;
 
+		$wikipage = WikiPage::newFromID( $title->getArticleID() );
+		$lastmod = $wikipage->getTimestamp();
+		$metadata .= 'תאריך עדכון אחרון בעברית: ' . $lastmod . PHP_EOL;
+		$metadata .= 'Revision: ' . $wikipage->getLatest() . PHP_EOL;
+
+
+
+		return $metadata;
+	}
 
 	private static function doTransformation( $wikitext, $lines, $type ) {
 		$needles = [];
