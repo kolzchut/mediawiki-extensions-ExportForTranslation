@@ -47,6 +47,7 @@ class ExportForTranslation {
 		$wikitext = self::doTransformation( $wikitext, self::$titleLines, 'title-transclusion' );
 
 		$wikitext = self::getArticleMetadata( $title ) . $wikitext;
+		$wikitext .= PHP_EOL . self::makeLanguageLinkToSource( $title );
 
 		return $wikitext;
 	}
@@ -54,6 +55,11 @@ class ExportForTranslation {
 	private static function loadData() {
 		self::$headerLines = explode( "\n", wfMessage( 'exportfortranslation-headers-list' )->text() );
 		self::$titleLines = explode( "\n", wfMessage( 'exportfortranslation-titles-list' )->text() );
+	}
+
+	private static function makeLanguageLinkToSource( Title $title ) {
+		$hebrewName = $title->getFullText();
+		return '[[he:' . $hebrewName . ']]' . PHP_EOL;
 	}
 
 	private static function getArticleMetadata( Title $title ) {
