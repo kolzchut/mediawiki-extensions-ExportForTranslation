@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @Note We do not worry about translating "header transclusions" for non-existing articles -
+ *       that is the responsibility of the translation manager. All titles in the project list
+ *       now have their "dependencies" (titles it transcludes from) marked
+ */
 
 class ExportForTranslation {
 
@@ -21,7 +26,7 @@ class ExportForTranslation {
 	 *
 	 * @return null|string
 	 */
-	private static function loadPageContent( Title $title ) {
+	private static function getPageContent( Title $title ) {
 		if ( $title->exists() ) {
 			$page = WikiPage::factory( $title );
 			$content = $page->getRevision()->getContent();
@@ -31,9 +36,16 @@ class ExportForTranslation {
 		}
 	}
 
+	/**
+	 * Load the content of a given page (by name), do our misc. transformations & add metadata
+	 *
+	 * @param $pageName
+	 *
+	 * @return null|string
+	 */
 	public static function export( $pageName ) {
 		$title = Title::newFromText( $pageName );
-		$wikitext = self::loadPageContent( $title );
+		$wikitext = self::getPageContent( $title );
 
 		self::loadData();
 
@@ -52,16 +64,31 @@ class ExportForTranslation {
 		return $wikitext;
 	}
 
+	/**
+	 * Load data from on-wiki messages into class members
+	 */
 	private static function loadData() {
 		self::$headerLines = explode( "\n", wfMessage( 'exportfortranslation-headers-list' )->text() );
 		self::$titleLines = explode( "\n", wfMessage( 'exportfortranslation-titles-list' )->text() );
 	}
 
+	/**
+	 * Make an interlanguage link back to the original page
+	 *
+	 * @param Title $title
+	 *
+	 * @return string
+	 */
 	private static function makeLanguageLinkToSource( Title $title ) {
 		$hebrewName = $title->getFullText();
 		return '[[he:' . $hebrewName . ']]' . PHP_EOL;
 	}
 
+	/**
+	 * @param Title $title
+	 *
+	 * @return string
+	 */
 	private static function getArticleMetadata( Title $title ) {
 		$hebrewName = $title->getFullText();
 		$metadata = 'שם הערך בעברית: ' . $hebrewName . PHP_EOL;
@@ -74,11 +101,18 @@ class ExportForTranslation {
 		$metadata .= 'תאריך עדכון אחרון בעברית: ' . $lastmod . PHP_EOL;
 		$metadata .= 'Revision: ' . $wikipage->getLatest() . PHP_EOL;
 
-
-
 		return $metadata;
 	}
 
+	/**
+	 * Do replacements of Hebrew text into their Arabic translation
+	 *
+	 * @param string $wikitext
+	 * @param array $lines
+	 * @param string $type
+	 *
+	 * @return string
+	 */
 	private static function doTransformation( $wikitext, $lines, $type ) {
 		$needles = [];
 		$replacements = [];
@@ -90,6 +124,11 @@ class ExportForTranslation {
 		return $wikitext;
 	}
 
+	/**
+	 * @param string $type
+	 *
+	 * @return string
+	 */
 	private static function getTemplateForType( $type ) {
 		return self::$textTemplates[ $type ];
 	}
@@ -108,19 +147,14 @@ class ExportForTranslation {
 	}
 
 	/**
-	 * @Note We do not worry about translating "header transclusions" for non-existing articles -
-	 *       that is the responsibility of the translation manager. All titles in the project list
-	 *       now have their "dependencies" (titles it transcludes from) marked
-	 */
-
-	/**
+	 * Receive an array containing both texts and replacements
+	 * (odd are texts, even are replacements) and splits it into two arrays
+	 *
 	 * @param array $combined_array
 	 * @param array $source
 	 * @param array $target
 	 */
-	private static function splitReplacementsArray(
-		$combined_array, &$source, &$target
-	) {
+	private static function splitReplacementsArray( $combined_array, &$source, &$target ) {
 		foreach ( $combined_array as $line_num => $line ) {
 			if ( $line_num % 2 === 0 ) {
 				$source[] = preg_quote( $line, '/' );
