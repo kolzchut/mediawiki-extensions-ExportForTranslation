@@ -14,6 +14,8 @@ class ExportForTranslation {
 		'title-transclusion-replacement'  => '{{הטמעת כותרת | %s#'
 	];
 
+	private static $headerLines, $titleLines;
+
 	/**
 	 * @param Title $title
 	 *
@@ -33,22 +35,24 @@ class ExportForTranslation {
 		$title = Title::newFromText( $pageName );
 		$wikitext = self::loadPageContent( $title );
 
-
-		$headerLines = explode( "\n", wfMessage( 'exportfortranslation-headers-list' )->text() );
-		$titleLines = explode( "\n", wfMessage( 'exportfortranslation-titles-list' )->text() );
-
+		self::loadData();
 
 		// Prepare headers transformation.
-		$wikitext = self::doTransformation( $wikitext, $headerLines, 'header' );
+		$wikitext = self::doTransformation( $wikitext, self::$headerLines, 'header' );
 		// Prepare headers transformation in transclusions
-		$wikitext = self::doTransformation( $wikitext, $headerLines, 'header-transclusion' );
+		$wikitext = self::doTransformation( $wikitext, self::$headerLines, 'header-transclusion' );
 		// Prepare titles transformation in links
-		$wikitext = self::doTransformation( $wikitext, $titleLines, 'title' );
+		$wikitext = self::doTransformation( $wikitext, self::$titleLines, 'title' );
 		// Prepare titles transformation in transclusions
-		$wikitext = self::doTransformation( $wikitext, $titleLines, 'title-transclusion' );
+		$wikitext = self::doTransformation( $wikitext, self::$titleLines, 'title-transclusion' );
 
 
 		return $wikitext;
+	}
+
+	private static function loadData() {
+		self::$headerLines = explode( "\n", wfMessage( 'exportfortranslation-headers-list' )->text() );
+		self::$titleLines = explode( "\n", wfMessage( 'exportfortranslation-titles-list' )->text() );
 	}
 
 
