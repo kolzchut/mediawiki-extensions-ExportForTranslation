@@ -17,7 +17,7 @@
 		"export-for-translation"
 	],
 	"GroupPermissions": {
-		"sysop": {
+		"translator": {
 			"export-for-translation": true
 		}
 	},

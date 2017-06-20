@@ -10,5 +10,9 @@
 	"exportform-field-title": "דף לייצוא",
 	"exportform-field-title-placeholder": "אנא הקלידו שם דף",
 	"action-export-for-translation": "לייצא דפים בפורמט לתרגום",
-	"exportfortranslation-btn": "ייצוא לתרגום"
+	"exportfortranslation-btn": "ייצוא לתרגום",
+	"group-translator": "מתרגמים",
+	"group-translator-member": "מתרגם",
+	"grouppage-translator": "{{ns:project}}:מתרגמים",
+	"right-export-for-translation": "ייצוא דפים לתרגום"
 }
