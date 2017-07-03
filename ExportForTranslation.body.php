@@ -95,8 +95,13 @@ class ExportForTranslation {
 		$hebrewName = $title->getFullText();
 		$metadata = 'שם הערך בעברית: ' . $hebrewName . PHP_EOL;
 		$hebrewNameKey = array_search( $hebrewName, self::$titleLines );
-		$arabicName = self::$titleLines[$hebrewNameKey+1];
-		$metadata .= 'שם הערך בערבית: ' . $arabicName . PHP_EOL;
+
+		if ( $hebrewNameKey !== false ) {
+			$arabicName = self::$titleLines[ $hebrewNameKey + 1 ];
+			$metadata   .= 'שם הערך בערבית: ' . $arabicName . PHP_EOL;
+		} else {
+			$metadata .= 'אין לשם ערך זה תרגום קיים לערבית' . PHP_EOL;
+		}
 
 		$wikipage = WikiPage::newFromID( $title->getArticleID() );
 		$lastmod = $wikipage->getTimestamp();
