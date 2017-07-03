@@ -19,7 +19,7 @@ class ExportForTranslation {
 		'title-transclusion-replacement'  => '{{הטמעת כותרת | %s#'
 	];
 
-	private static $headerLines, $titleLines;
+	private static $headerLines, $titleLines, $interlanguageLines;
 
 	/**
 	 * @param Title $title
@@ -72,6 +72,36 @@ class ExportForTranslation {
 
 		$titleLinesMsg = wfMessage( 'exportfortranslation-titles-list' );
 		self::$titleLines = $titleLinesMsg->isDisabled() ? [] : explode( "\n", $titleLinesMsg->text() );
+		self::$interlanguageLines = self::getAllInterlanguageLinks();
+
+		// Merge interlanguage lines with the suggested titles
+		self::$titleLines = array_merge( self::$interlanguageLines, self::$titleLines );
+	}
+
+	private static function getAllInterlanguageLinks() {
+		$tables = [ 'page', 'langlinks' ];
+		$fields = [
+			'namespace' => 'page_namespace',
+			'origin' => 'page_title',
+			'target' => 'll_title'
+		];
+		$conds = [
+			'll_lang' => 'ar',
+			'page_namespace' => NS_MAIN,
+			'page_is_redirect' => 0
+		];
+		$join_conds = [ 'langlinks' => [ 'INNER JOIN', 'll_from = page_id' ] ];
+
+		$dbr = wfGetDB( DB_SLAVE );
+		$res = $dbr->select( $tables, $fields, $conds, __METHOD__, [], $join_conds );
+
+		$lines = [];
+		foreach ( $res as $row ) {
+			$lines[] = Title::newFromDBkey( $row->origin )->getPrefixedText();
+			$lines[] = $row->target;
+		}
+
+		return $lines;
 	}
 
 	/**
