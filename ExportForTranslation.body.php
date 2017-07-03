@@ -69,7 +69,9 @@ class ExportForTranslation {
 	 */
 	private static function loadData() {
 		self::$headerLines = explode( "\n", wfMessage( 'exportfortranslation-headers-list' )->text() );
-		self::$titleLines = explode( "\n", wfMessage( 'exportfortranslation-titles-list' )->text() );
+
+		$titleLinesMsg = wfMessage( 'exportfortranslation-titles-list' );
+		self::$titleLines = $titleLinesMsg->isDisabled() ? [] : explode( "\n", $titleLinesMsg->text() );
 	}
 
 	/**
