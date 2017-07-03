@@ -68,10 +68,11 @@ class SpecialExportForTranslation extends FormSpecialPage {
 		$title = ( $pageName instanceof Title ) ? $pageName : Title::newFromText( $pageName );
 		$wikitext = ExportForTranslation::export( $title->getFullText() );
 		$filename = $title->getDBkey() . '-' . wfTimestampNow() . '.txt';
+		$filename_encoded = rawurlencode( $filename );
 
 		$response->header( "Content-type: text/plain; charset=utf-8" );
 		$response->header( "X-Robots-Tag: noindex,nofollow" );
-		$response->header( "Content-disposition: attachment;filename={$filename}" );
+		$response->header( "Content-disposition: attachment;filename={$filename_encoded};filename*=UTF-8''{$filename_encoded}" );
 		$response->header( 'Cache-Control: no-cache, no-store, max-age=0, must-revalidate' );
 		$response->header( 'Pragma: no-cache' );
 		$response->header( 'Content-Length: ' . strlen( $wikitext ) );
