@@ -8,7 +8,13 @@
 
 class ExportForTranslationHooks {
 	public static function onSkinTemplateNavigation( SkinTemplate &$sktemplate, array &$links ) {
-		if ( $sktemplate->getUser()->isAllowed( 'export-for-translation' ) ) {
+		$title = $sktemplate->getRelevantTitle();
+
+		if (
+			$title->isContentPage() &&
+			$title->exists() &&
+			$sktemplate->getUser()->isAllowed( 'export-for-translation' )
+		) {
 			self::addButtonToToolbar( $sktemplate, $links );
 		}
 
@@ -17,10 +23,12 @@ class ExportForTranslationHooks {
 
 	public static function addButtonToToolbar( SkinTemplate &$sktemplate, array &$links ) {
 		$title = $sktemplate->getRelevantTitle();
-		$exportPage = SpecialPage::getTitleFor( 'ExportForTranslation', $title->getFullText() );
-		$links['actions']['exportfortranslation'] = [
-			'text'	=> $sktemplate->msg( 'exportfortranslation-btn' )->text(),
-			'href'	=>  $exportPage->getLocalURL()
+		$exportPage = SpecialPage::getTitleFor(
+			'ExportForTranslation', $title->getFullText()
+		);
+		$links[ 'actions' ][ 'exportfortranslation' ] = [
+			'text' => $sktemplate->msg( 'exportfortranslation-btn' )->text(),
+			'href' => $exportPage->getLocalURL()
 		];
 	}
 }
