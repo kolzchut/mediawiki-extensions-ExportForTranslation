@@ -58,7 +58,7 @@ class ExportForTranslation {
 		// Prepare titles transformation in transclusions
 		$wikitext = self::doTransformation( $wikitext, self::$titleLines, 'title-transclusion' );
 
-		$wikitext = self::getArticleMetadata( $title ) . $wikitext;
+		$wikitext = self::makeHtmlComment( self::getArticleMetadata( $title ) ) . $wikitext;
 		$wikitext .= PHP_EOL . self::makeLanguageLinkToSource( $title );
 
 		return $wikitext;
@@ -136,9 +136,13 @@ class ExportForTranslation {
 		$wikipage = WikiPage::newFromID( $title->getArticleID() );
 		$lastmod = $wikipage->getTimestamp();
 		$metadata .= 'תאריך עדכון אחרון בעברית: ' . $lastmod . PHP_EOL;
-		$metadata .= 'Revision: ' . $wikipage->getLatest() . PHP_EOL;
+		$metadata .= 'Revision: ' . $wikipage->getLatest();
 
 		return $metadata;
+	}
+
+	protected static function makeHtmlComment( $text ) {
+		return '<!--' . PHP_EOL . $text . PHP_EOL . '-->' . PHP_EOL;
 	}
 
 	/**
