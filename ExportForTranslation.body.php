@@ -6,6 +6,8 @@
  *       now have their "dependencies" (titles it transcludes from) marked
  */
 
+use TranslationManager\TranslationManagerStatus;
+
 class ExportForTranslation {
 
 	private static $textTemplates = [
@@ -70,12 +72,22 @@ class ExportForTranslation {
 	private static function loadData() {
 		self::$headerLines = explode( "\n", wfMessage( 'exportfortranslation-headers-list' )->text() );
 
-		$titleLinesMsg = wfMessage( 'exportfortranslation-titles-list' );
-		self::$titleLines = $titleLinesMsg->isDisabled() ? [] : explode( "\n", $titleLinesMsg->text() );
+		self::$titleLines = self::getAllTranslationSuggestions();
 		self::$interlanguageLines = self::getAllInterlanguageLinks();
 
 		// Merge interlanguage lines with the suggested titles
 		self::$titleLines = array_merge( self::$interlanguageLines, self::$titleLines );
+	}
+
+	private static function getAllTranslationSuggestions() {
+		static $translationSuggestions = [];
+		$rows = TranslationManagerStatus::getAllSuggestions();
+		foreach ( $rows as $row ) {
+			$translationSuggestions[] = strtr( $row->page_title, '_', ' ' );
+			$translationSuggestions[] = $row->suggested_translation;
+		}
+
+		return $translationSuggestions;
 	}
 
 	private static function getAllInterlanguageLinks() {
