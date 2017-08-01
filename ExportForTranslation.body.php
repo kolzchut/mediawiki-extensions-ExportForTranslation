@@ -84,7 +84,7 @@ class ExportForTranslation {
 		$rows = TranslationManagerStatus::getAllSuggestions();
 		foreach ( $rows as $row ) {
 			$translationSuggestions[] = strtr( $row->page_title, '_', ' ' );
-			$translationSuggestions[] = $row->suggested_translation;
+			$translationSuggestions[] = $row->suggested_name;
 		}
 
 		return $translationSuggestions;
