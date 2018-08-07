@@ -1,6 +1,6 @@
 {
 	"name": "ExportForTranslation",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"author": [
 		"Dror S. [FFS] ([http://www.kolzchut.org.il Kol-Zchut])"
 	],
@@ -36,6 +36,12 @@
 	},
 	"SpecialPages": {
 		"ExportForTranslation": "SpecialExportForTranslation"
+	},
+	"config": {
+		"ExportForTranslationValidLanguages": [
+			"ar",
+			"en"
+		]
 	},
 	"manifest_version": 1
 }

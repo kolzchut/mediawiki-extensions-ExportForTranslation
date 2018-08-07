@@ -2,8 +2,7 @@
 
 /**
  * @Note We do not worry about translating "header transclusions" for non-existing articles -
- *       that is the responsibility of the translation manager. All titles in the project list
- *       now have their "dependencies" (titles it transcludes from) marked
+ *       that is the responsibility of the translation manager.
  */
 
 use TranslationManager\TranslationManagerStatus;
@@ -21,7 +20,7 @@ class ExportForTranslation {
 		'title-transclusion-replacement'  => '{{הטמעת כותרת | %s#'
 	];
 
-	private static $headerLines, $titleLines, $interlanguageLines;
+	private static $headerLines, $titleLines, $interlanguageLines, $language;
 
 	/**
 	 * @param Title $title
@@ -45,10 +44,10 @@ class ExportForTranslation {
 	 *
 	 * @return null|string
 	 */
-	public static function export( $pageName ) {
+	public static function export( $pageName, $language ) {
 		$title = Title::newFromText( $pageName );
 		$wikitext = self::getPageContent( $title );
-
+		self::$language = $language;
 		self::loadData();
 
 		// Prepare headers transformation.
@@ -70,7 +69,9 @@ class ExportForTranslation {
 	 * Load data from on-wiki messages into class members
 	 */
 	private static function loadData() {
-		self::$headerLines = explode( "\n", wfMessage( 'exportfortranslation-headers-list' )->text() );
+		self::$headerLines = explode( "\n",
+			wfMessage( 'exportfortranslation-headers-list' )->inLanguage( self::$language )->text()
+		);
 
 		self::$titleLines = self::getAllTranslationSuggestions();
 		self::$interlanguageLines = self::getAllInterlanguageLinks();
@@ -81,7 +82,7 @@ class ExportForTranslation {
 
 	private static function getAllTranslationSuggestions() {
 		static $translationSuggestions = [];
-		$rows = TranslationManagerStatus::getAllSuggestions();
+		$rows = TranslationManagerStatus::getAllSuggestions( self::$language );
 		foreach ( $rows as $row ) {
 			$translationSuggestions[] = strtr( $row->page_title, '_', ' ' );
 			$translationSuggestions[] = $row->suggested_name;
@@ -98,7 +99,7 @@ class ExportForTranslation {
 			'target' => 'll_title'
 		];
 		$conds = [
-			'll_lang' => 'ar',
+			'll_lang' => self::$language,
 			'page_namespace' => NS_MAIN,
 			'page_is_redirect' => 0
 		];
@@ -134,13 +135,13 @@ class ExportForTranslation {
 	 * @return string
 	 */
 	private static function getArticleMetadata( Title $title ) {
-		$hebrewName = $title->getFullText();
-		$metadata = 'שם הערך בעברית: ' . $hebrewName . PHP_EOL;
-		$hebrewNameKey = array_search( $hebrewName, self::$titleLines );
+		$originalName    = $title->getFullText();
+		$metadata        = 'שם הערך בעברית: ' . $originalName . PHP_EOL;
+		$originalNameKey = array_search( $originalName, self::$titleLines );
 
-		if ( $hebrewNameKey !== false ) {
-			$arabicName = self::$titleLines[ $hebrewNameKey + 1 ];
-			$metadata   .= 'שם הערך בערבית: ' . $arabicName . PHP_EOL;
+		if ( $originalNameKey !== false ) {
+			$translatedName = self::$titleLines[ $originalNameKey + 1 ];
+			$metadata       .= 'שם הערך בערבית: ' . $translatedName . PHP_EOL;
 		} else {
 			$metadata .= 'אין לשם ערך זה תרגום קיים לערבית' . PHP_EOL;
 		}
@@ -158,7 +159,7 @@ class ExportForTranslation {
 	}
 
 	/**
-	 * Do replacements of Hebrew text into their Arabic translation
+	 * Do replacements of Hebrew text into their targat language
 	 *
 	 * @param string $wikitext
 	 * @param array $lines

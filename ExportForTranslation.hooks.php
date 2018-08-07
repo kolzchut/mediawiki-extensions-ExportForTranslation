@@ -22,13 +22,14 @@ class ExportForTranslationHooks {
 	}
 
 	public static function addButtonToToolbar( SkinTemplate &$sktemplate, array &$links ) {
+		$language = $sktemplate->getUser()->getOption( 'translationmanager-language' );
 		$title = $sktemplate->getRelevantTitle();
 		$exportPage = SpecialPage::getTitleFor(
 			'ExportForTranslation', $title->getFullText()
 		);
 		$links[ 'actions' ][ 'exportfortranslation' ] = [
 			'text' => $sktemplate->msg( 'exportfortranslation-btn' )->text(),
-			'href' => $exportPage->getLocalURL()
+			'href' => $exportPage->getLocalURL( [ 'language' => $language ] )
 		];
 	}
 }

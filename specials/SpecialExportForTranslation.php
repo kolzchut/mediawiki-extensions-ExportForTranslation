@@ -61,12 +61,18 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	 * @return bool
 	 */
 	protected function sendFile( $pageName ) {
+		global $wgExportForTranslationValidLanguages;
 		$request = $this->getRequest();
 		$response = $request->response();
 		$this->getOutput()->disable();
+		$language = $request->getVal( 'language' );
+
+		if ( empty( $language ) || !in_array( $language, $wgExportForTranslationValidLanguages ) ) {
+			throw new MWException( 'Invalid target language for translation export!' );
+		}
 
 		$title = ( $pageName instanceof Title ) ? $pageName : Title::newFromText( $pageName );
-		$wikitext = ExportForTranslation::export( $title->getFullText() );
+		$wikitext = ExportForTranslation::export( $title->getFullText(), $language );
 		$filename = $title->getDBkey() . '-' . wfTimestampNow() . '.txt';
 		$filename_encoded = rawurlencode( $filename );
 
@@ -91,6 +97,12 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	}
 
 	protected function getFormFields() {
+		global $wgExportForTranslationValidLanguages;
+		$languages = [];
+		foreach ( $wgExportForTranslationValidLanguages as $lang ) {
+			$langName = Language::fetchLanguageName( $lang );
+			$languages[ $langName ] = $lang;
+		}
 		$formDescriptor = [
 			'title' => [
 				'type' => 'title',
@@ -98,7 +110,12 @@ class SpecialExportForTranslation extends FormSpecialPage {
 				'placeholder' => $this->msg( 'exportform-field-title-placeholder' )->text(),
 				'required' => true,
 				'exists' => true
-
+			],
+			'language' => [
+				'type' => 'select',
+				'label-message' => 'exportform-field-language',
+				'required' => true,
+				'options' => $languages
 			]
 		];
 
