@@ -1,6 +1,6 @@
 {
 	"name": "ExportForTranslation",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"author": [
 		"Dror S. [FFS] ([http://www.kolzchut.org.il Kol-Zchut])"
 	],
@@ -9,9 +9,13 @@
 	"license-name": "GPL-2.0+",
 	"type": "other",
 	"AutoloadClasses": {
-		"ExportForTranslation": "ExportForTranslation.body.php",
-		"ExportForTranslationHooks": "ExportForTranslation.hooks.php",
-		"SpecialExportForTranslation": "specials/SpecialExportForTranslation.php"
+		"ExportForTranslation\\Export": "ExportForTranslation.body.php",
+		"ExportForTranslation\\Hooks": "ExportForTranslation.hooks.php",
+		"ExportForTranslation\\SpecialExportForTranslation": "specials/SpecialExportForTranslation.php",
+		"ExportForTranslation\\ApiExportForTranslation": "api/ApiExportForTranslation.php"
+	},
+	"APIModules": {
+		"exportfortranslation": "ExportForTranslation\\ApiExportForTranslation"
 	},
 	"AvailableRights": [
 		"export-for-translation"
@@ -26,7 +30,7 @@
 	},
 	"Hooks": {
 		"SkinTemplateNavigation": [
-			"ExportForTranslationHooks::onSkinTemplateNavigation"
+			"ExportForTranslation\\Hooks::onSkinTemplateNavigation"
 		]
 	},
 	"MessagesDirs": {
@@ -35,13 +39,13 @@
 		]
 	},
 	"SpecialPages": {
-		"ExportForTranslation": "SpecialExportForTranslation"
+		"ExportForTranslation": "ExportForTranslation\\SpecialExportForTranslation"
 	},
-	"config": {
-		"ExportForTranslationValidLanguages": [
-			"ar",
-			"en"
-		]
+	"requires": {
+		"MediaWiki": ">= 1.29.0",
+		"extensions": {
+			"TranslationManager": ">= 0.5.2"
+		}
 	},
-	"manifest_version": 1
+	"manifest_version": 2
 }

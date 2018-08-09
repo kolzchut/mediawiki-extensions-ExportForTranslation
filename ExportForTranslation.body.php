@@ -5,9 +5,14 @@
  *       that is the responsibility of the translation manager.
  */
 
-use TranslationManager\TranslationManagerStatus;
+namespace ExportForTranslation;
 
-class ExportForTranslation {
+use TranslationManager\TranslationManagerStatus;
+use Title;
+use WikiPage;
+use ContentHandler;
+
+class Export {
 
 	private static $textTemplates = [
 		'header'                          => '/\=\=\s*(%s)\s*\=\=/',
@@ -38,14 +43,73 @@ class ExportForTranslation {
 	}
 
 	/**
-	 * Load the content of a given page (by name), do our misc. transformations & add metadata
+	 * B/C function - transformText() now does the real work
 	 *
-	 * @param $pageName
+	 * @param int|string $pageName
 	 *
 	 * @return null|string
 	 */
 	public static function export( $pageName, $language ) {
-		$title = Title::newFromText( $pageName );
+		if ( $pageName instanceof Title ) {
+			$title = $pageName;
+		} elseif ( is_int( $pageName ) ) {
+			$title = Title::newFromID( $pageName );
+		} else {
+			$title = Title::newFromText( $pageName );
+		}
+		if ( !$title->exists() ) {
+			return null;
+		}
+		return self::transformText( $title, $language );
+	}
+
+	/**
+	 * Do a regular export and add metadata
+	 *
+	 * @param Title $title
+	 *
+	 * @return null|array
+	 */
+	public static function exportWithMetadata( $title, $language ) {
+		$result = self::getMetadata( $title, $language );
+		$result['text'] = self::transformText( $title, $language );
+
+		return $result;
+	}
+
+	/**
+	 * @param Title $title
+	 * @param string $language
+	 *
+	 * @return array
+	 */
+	public static function getMetadata( $title, $language ) {
+		$statusObject = new TranslationManagerStatus( $title->getArticleID(), $language );
+		$wikipage = WikiPage::factory( $title );
+		$metadata = [
+			'originalTitle' => $title->getFullText(),
+			'targetLanguage' => $language,
+			'suggestedTargetTitle' => $statusObject->getSuggestedTranslation(),
+			'existingTargetTitle' => $statusObject->getActualTranslation(),
+			'articleType' => $statusObject->getArticleType(),
+			'revision' => $wikipage->getLatest(),
+			'lastUpdated' => $wikipage->getTimestamp()
+		];
+
+		return $metadata;
+
+	}
+
+
+
+	/**
+	 * Load the content of a given Title, do our misc transformations
+	 *
+	 * @param Title $title
+	 *
+	 * @return null|string
+	 */
+	private static function transformText( $title, $language ) {
 		$wikitext = self::getPageContent( $title );
 		self::$language = $language;
 		self::loadData();
@@ -59,10 +123,10 @@ class ExportForTranslation {
 		// Prepare titles transformation in transclusions
 		$wikitext = self::doTransformation( $wikitext, self::$titleLines, 'title-transclusion' );
 
-		$wikitext = self::makeHtmlComment( self::getArticleMetadata( $title ) ) . $wikitext;
 		$wikitext .= PHP_EOL . self::makeLanguageLinkToSource( $title );
 
 		return $wikitext;
+
 	}
 
 	/**
@@ -81,7 +145,7 @@ class ExportForTranslation {
 	}
 
 	private static function getAllTranslationSuggestions() {
-		static $translationSuggestions = [];
+		static $translationSuggestions;
 		$rows = TranslationManagerStatus::getAllSuggestions( self::$language );
 		foreach ( $rows as $row ) {
 			$translationSuggestions[] = strtr( $row->page_title, '_', ' ' );
@@ -127,35 +191,6 @@ class ExportForTranslation {
 	private static function makeLanguageLinkToSource( Title $title ) {
 		$hebrewName = $title->getFullText();
 		return '[[he:' . $hebrewName . ']]' . PHP_EOL;
-	}
-
-	/**
-	 * @param Title $title
-	 *
-	 * @return string
-	 */
-	private static function getArticleMetadata( Title $title ) {
-		$originalName    = $title->getFullText();
-		$metadata        = 'שם הערך בעברית: ' . $originalName . PHP_EOL;
-		$originalNameKey = array_search( $originalName, self::$titleLines );
-
-		if ( $originalNameKey !== false ) {
-			$translatedName = self::$titleLines[ $originalNameKey + 1 ];
-			$metadata       .= 'שם הערך בערבית: ' . $translatedName . PHP_EOL;
-		} else {
-			$metadata .= 'אין לשם ערך זה תרגום קיים לערבית' . PHP_EOL;
-		}
-
-		$wikipage = WikiPage::newFromID( $title->getArticleID() );
-		$lastmod = $wikipage->getTimestamp();
-		$metadata .= 'תאריך עדכון אחרון בעברית: ' . $lastmod . PHP_EOL;
-		$metadata .= 'Revision: ' . $wikipage->getLatest();
-
-		return $metadata;
-	}
-
-	protected static function makeHtmlComment( $text ) {
-		return '<!--' . PHP_EOL . $text . PHP_EOL . '-->' . PHP_EOL;
 	}
 
 	/**

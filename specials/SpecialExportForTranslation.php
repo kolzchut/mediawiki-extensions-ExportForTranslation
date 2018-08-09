@@ -6,6 +6,13 @@
  * @ingroup Extensions
  */
 
+namespace ExportForTranslation;
+
+use FormSpecialPage;
+use Title;
+use HTMLForm;
+use TranslationManager\TranslationManagerStatus;
+
 class SpecialExportForTranslation extends FormSpecialPage {
 	public function __construct() {
 		parent::__construct( 'ExportForTranslation', 'export-for-translation' );
@@ -46,45 +53,50 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	/**
 	 * @param array $formData
 	 *
-	 * @return bool|Status
+	 * @return bool status
 	 */
 	public function onSubmit( array $formData ) {
-		// Note: validation of title existance is already done as part of HTMLTitleTextField
-		$this->sendFile( $formData['title'] );
+		// Note: validation of title existance is already done automagically in HTMLTitleTextField
+		$title =  Title::newFromText( $formData['title'] );
+		$this->sendFile( $title );
 
 		return true;
 	}
 
 	/**
-	 * @param Title|string $pageName
+	 * @param Title $title
 	 *
 	 * @return bool
 	 */
-	protected function sendFile( $pageName ) {
-		global $wgExportForTranslationValidLanguages;
+	protected function sendFile( $title ) {
 		$request = $this->getRequest();
 		$response = $request->response();
 		$this->getOutput()->disable();
-		$language = $request->getVal( 'language' );
+		$language = $request->getVal( 'language',
+			$this->getUser()->getOption( 'translationmanager-language' )
+		);
 
-		if ( empty( $language ) || !in_array( $language, $wgExportForTranslationValidLanguages ) ) {
+		if ( !TranslationManagerStatus::isValidLanguage( $language ) ) {
 			throw new MWException( 'Invalid target language for translation export!' );
 		}
 
-		$title = ( $pageName instanceof Title ) ? $pageName : Title::newFromText( $pageName );
-		$wikitext = ExportForTranslation::export( $title->getFullText(), $language );
-		$filename = $title->getDBkey() . '-' . wfTimestampNow() . '.txt';
-		$filename_encoded = rawurlencode( $filename );
+		$exportData = Export::exportWithMetadata( $title, $language );
+		$metadata = self::formatMetadataForHumans( $exportData );
+		$exportText = self::makeHtmlComment( $metadata ) . $exportData['text'];
+		$filename        = $title->getDBkey() . '-' . $language . '-' . wfTimestampNow() . '.txt';
+		$filenameEncoded = rawurlencode( $filename );
 
 		$response->header( "Content-type: text/plain; charset=utf-8" );
 		$response->header( "X-Robots-Tag: noindex,nofollow" );
-		$response->header( "Content-disposition: attachment;filename={$filename_encoded};filename*=UTF-8''{$filename_encoded}" );
+		$response->header(
+			"Content-disposition: attachment;filename={$filenameEncoded};filename*=UTF-8''{$filenameEncoded}"
+		);
 		$response->header( 'Cache-Control: no-cache, no-store, max-age=0, must-revalidate' );
 		$response->header( 'Pragma: no-cache' );
-		$response->header( 'Content-Length: ' . strlen( $wikitext ) );
+		$response->header( 'Content-Length: ' . strlen( $exportText ) );
 		$response->header( 'Connection: close' );
 
-		echo $wikitext;
+		echo $exportText;
 		return true;
 	}
 
@@ -97,12 +109,7 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	}
 
 	protected function getFormFields() {
-		global $wgExportForTranslationValidLanguages;
-		$languages = [];
-		foreach ( $wgExportForTranslationValidLanguages as $lang ) {
-			$langName = Language::fetchLanguageName( $lang );
-			$languages[ $langName ] = $lang;
-		}
+		$languageOptions = TranslationManagerStatus::getLanguagesForSelectField();
 		$formDescriptor = [
 			'title' => [
 				'type' => 'title',
@@ -112,13 +119,38 @@ class SpecialExportForTranslation extends FormSpecialPage {
 				'exists' => true
 			],
 			'language' => [
+				'name' => 'language',
 				'type' => 'select',
 				'label-message' => 'exportform-field-language',
 				'required' => true,
-				'options' => $languages
+				'options' => $languageOptions
 			]
 		];
 
 		return $formDescriptor;
+	}
+
+	protected function formatMetadataForHumans( $data ) {
+		$text[] = 'שם הערך בעברית: ' . $data['originalTitle'];
+		$text[] = 'שפת יעד לתרגום: ' . \Language::fetchLanguageName( $data['targetLanguage'] );
+
+		if ( isset( $data['existingTargetTitle'] ) ) {
+			$text[] = 'קיים כבר תרגום: ' . $data[ 'existingTargetTitle' ];
+		} elseif ( isset( $data['suggestedTargetTitle'] ) ) {
+			$text[] = 'השם המוצע לתרגום: ' . $data[ 'suggestedTargetTitle' ];
+		} else {
+			$text[] = 'אין לערך תרגום קיים או שם מוצע לתרגום';
+		}
+
+		$text[] = 'תאריך עדכון אחרון של הערך: ' . $data['lastUpdated'];
+		$text[] = 'Revision: ' . $data['revision'];
+
+		$text = implode( PHP_EOL, $text );
+		return $text;
+
+	}
+
+	protected static function makeHtmlComment( $text ) {
+		return '<!--' . PHP_EOL . $text . PHP_EOL . '-->' . PHP_EOL;
 	}
 }

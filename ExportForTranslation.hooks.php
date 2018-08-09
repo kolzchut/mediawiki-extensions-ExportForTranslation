@@ -6,7 +6,12 @@
  * @ingroup Extensions
  */
 
-class ExportForTranslationHooks {
+namespace ExportForTranslation;
+
+use SkinTemplate;
+use SpecialPage;
+
+class Hooks {
 	public static function onSkinTemplateNavigation( SkinTemplate &$sktemplate, array &$links ) {
 		$title = $sktemplate->getRelevantTitle();
 
