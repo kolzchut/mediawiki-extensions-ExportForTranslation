@@ -7,12 +7,18 @@ extension to translate links and headers; this saves on repeat work
 and helps maintain consistency.
 
 Both TranslationManager and ExportForTranslation are single-language
-for now, intended for translating Kol-Zchut to Arabic.
+for now, intended for translating Kol-Zchut from Hebrew to Arabic.
+
+## Configuration
+`$wgExportForTranslationNamespaces = [ NS_MAIN ]`
+  Namespaces that show the "export to translation" menu option
 
 
-# Dependencies
+## Dependencies
 This extension has a hard dependency on TranslationManager.
 
-# Todo
+## Todo
+- Support category names translation - if there's no interlanguage link
+  for the category, try and use regular article titles
 - Multi-lingual support
 - API module

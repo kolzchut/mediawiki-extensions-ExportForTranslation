@@ -21,6 +21,13 @@
 			"export-for-translation": true
 		}
 	},
+	"config": {
+		"ExportForTranslationNamespaces": {
+			"value": [
+				0
+			]
+		}
+	},
 	"ExtensionMessagesFiles": {
 		"ExportForTranslationAlias": "ExportForTranslation.i18n.alias.php"
 	},
@@ -37,5 +44,5 @@
 	"SpecialPages": {
 		"ExportForTranslation": "SpecialExportForTranslation"
 	},
-	"manifest_version": 1
+	"manifest_version": 2
 }
