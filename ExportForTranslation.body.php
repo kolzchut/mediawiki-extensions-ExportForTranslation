@@ -12,7 +12,7 @@ class ExportForTranslation {
 
 	private static $textTemplates = [
 		'header'                          => '/\=\=\s*(%s)\s*\=\=/',
-		'header-replacement'              => '== %s == <!-- $1 -->',
+		'header-replacement'              => '== %s ==',
 		'header-transclusion'             => '/#%s(}}|\s*\|)/',
 		'header-transclusion-replacement' => '#%s$1',
 		'title'                           => '/(\[\[)\s?%s\s*([\|\]])/',
