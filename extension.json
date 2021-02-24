@@ -1,6 +1,6 @@
 {
 	"name": "ExportForTranslation",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"author": [
 		"Dror S. [FFS] ([http://www.kolzchut.org.il Kol-Zchut])"
 	],
@@ -8,6 +8,12 @@
 	"descriptionmsg": "exportfortranslation-desc",
 	"license-name": "GPL-2.0+",
 	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.29.0",
+		"extensions": {
+			"TranslationManager": ">= 0.5.0"
+		}
+	},
 	"AutoloadClasses": {
 		"ExportForTranslation": "ExportForTranslation.body.php",
 		"ExportForTranslationHooks": "ExportForTranslation.hooks.php",
@@ -26,6 +32,9 @@
 			"value": [
 				0
 			]
+		},
+		"ExportForTranslationDefaultLanguage": {
+			"value": "ar"
 		}
 	},
 	"ExtensionMessagesFiles": {

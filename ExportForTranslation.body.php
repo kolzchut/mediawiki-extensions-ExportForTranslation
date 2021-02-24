@@ -9,34 +9,21 @@
 use TranslationManager\TranslationManagerStatus;
 
 class ExportForTranslation {
-
 	private static $textTemplates = [
 		'header'                          => '/\=\=\s*(%s)\s*\=\=/',
 		'header-replacement'              => '== %s ==',
 		'header-transclusion'             => '/#%s(}}|\s*\|)/',
 		'header-transclusion-replacement' => '#%s$1',
-		'title'                           => '/(\[\[)\s?%s\s*([\|\]])/',
-		'title-replacement'               => '$1%s$2',
+		// A link starts with [, but can end with ], | or # - beyond either it's just text
+		'title'                           => '/\[\[\s*?%s\s*([\|\]#])/',
+		'title-replacement'               => '[[%s$1',
+		'category-title'                  => '/\[\[קטגוריה:\s*%s\s*\]/',
+		'category-title-replacement'      => '[[קטגוריה:%s]',
 		'title-transclusion'              => '/\{\{\s*הטמעת כותרת\s*\|\s*%s\#/',
 		'title-transclusion-replacement'  => '{{הטמעת כותרת | %s#'
 	];
 
-	private static $headerLines, $titleLines, $interlanguageLines;
-
-	/**
-	 * @param Title $title
-	 *
-	 * @return null|string
-	 */
-	private static function getPageContent( Title $title ) {
-		if ( $title->exists() ) {
-			$page = WikiPage::factory( $title );
-			$content = $page->getRevision()->getContent();
-			return ContentHandler::getContentText( $content );
-		} else {
-			return null;
-		}
-	}
+	private static array $linkTranslations = [];
 
 	/**
 	 * Load the content of a given page (by name), do our misc. transformations & add metadata
@@ -46,20 +33,49 @@ class ExportForTranslation {
 	 * @return null|string
 	 */
 	public static function export( $pageName ) {
+		$targetLanguage = $GLOBALS[ 'wgExportForTranslationDefaultLanguage' ];
+
 		$title = Title::newFromText( $pageName );
-		$wikitext = self::getPageContent( $title );
+		$wikiPage = WikiPage::factory( $title );
+		$wikitext = $wikiPage->getContent()->getNativeData();
 
-		self::loadData();
+		$linkTitles = self::getPageLinks( $wikiPage );
+		$linkPageIds = array_map(
+			function( Title $t ) {
+				return $t->getArticleID();
+			},
+			$linkTitles
+		);
 
-		// Prepare headers transformation.
-		$wikitext = self::doTransformation( $wikitext, self::$headerLines, 'header' );
-		// Prepare headers transformation in transclusions
-		$wikitext = self::doTransformation( $wikitext, self::$headerLines, 'header-transclusion' );
-		// Prepare titles transformation in links
-		$wikitext = self::doTransformation( $wikitext, self::$titleLines, 'title' );
-		// Prepare titles transformation in transclusions
-		$wikitext = self::doTransformation( $wikitext, self::$titleLines, 'title-transclusion' );
+		// Translate headers
+		$headersTargetMsg = wfMessage( 'exportfortranslation-headers-list-' . $targetLanguage );
+		if ( $headersTargetMsg->exists() ) {
+			$headersNeedles = explode(
+				"\n", wfMessage( 'exportfortranslation-headers-list-he' )->text()
+			);
+			$headersReplacements = explode( "\n", $headersTargetMsg->text() );
 
+			// Translate regular headers
+			$wikitext = self::transform( $wikitext, $headersNeedles, $headersReplacements, 'header' );
+
+			// Translate headers in transclusions
+			$wikitext = self::transform( $wikitext, $headersNeedles, $headersReplacements, 'header-transclusion' );
+		}
+
+		// Translate regular links
+		self::$linkTranslations = TranslationManagerStatus::getSuggestionsByIds(
+			$targetLanguage, 'title', $linkPageIds
+		);
+		$linkNeedles = array_keys( self::$linkTranslations );
+		$linkReplacements = array_values( self::$linkTranslations );
+		// Do title transformation in links
+		$wikitext = self::transform( $wikitext, $linkNeedles, $linkReplacements, 'title' );
+		// Do title transformation in transclusions
+		$wikitext = self::transform( $wikitext, $linkNeedles, $linkReplacements, 'title-transclusion' );
+		// Do title transformation in *category links*, using the regular titles, not the category langlinks
+		$wikitext = self::transform( $wikitext, $linkNeedles, $linkReplacements, 'category-title' );
+
+		// Add metadata as comment
 		$wikitext = self::makeHtmlComment( self::getArticleMetadata( $title ) ) . $wikitext;
 		$wikitext .= PHP_EOL . self::makeLanguageLinkToSource( $title );
 
@@ -67,53 +83,22 @@ class ExportForTranslation {
 	}
 
 	/**
-	 * Load data from on-wiki messages into class members
+	 * @param WikiPage $wikiPage
+	 *
+	 * @return Title[]
 	 */
-	private static function loadData() {
-		self::$headerLines = explode( "\n", wfMessage( 'exportfortranslation-headers-list' )->text() );
+	private static function getPageLinks( WikiPage $wikiPage ) {
+		$pageLinks = [];
+		$pageCategories = [];
 
-		self::$titleLines = self::getAllTranslationSuggestions();
-		self::$interlanguageLines = self::getAllInterlanguageLinks();
+		$title = $wikiPage->getTitle();
 
-		// Merge interlanguage lines with the suggested titles
-		self::$titleLines = array_merge( self::$interlanguageLines, self::$titleLines );
-	}
-
-	private static function getAllTranslationSuggestions() {
-		static $translationSuggestions = [];
-		$rows = TranslationManagerStatus::getAllSuggestions();
-		foreach ( $rows as $row ) {
-			$translationSuggestions[] = strtr( $row->page_title, '_', ' ' );
-			$translationSuggestions[] = $row->suggested_name;
+		if ( $title->exists() ) {
+			$pageLinks = $title->getLinksFrom();
+			$pageCategories = iterator_to_array( $wikiPage->getCategories() ); // Returns TitleArray
 		}
 
-		return $translationSuggestions;
-	}
-
-	private static function getAllInterlanguageLinks() {
-		$tables = [ 'page', 'langlinks' ];
-		$fields = [
-			'namespace' => 'page_namespace',
-			'origin' => 'page_title',
-			'target' => 'll_title'
-		];
-		$conds = [
-			'll_lang' => 'ar',
-			'page_namespace' => NS_MAIN,
-			'page_is_redirect' => 0
-		];
-		$join_conds = [ 'langlinks' => [ 'INNER JOIN', 'll_from = page_id' ] ];
-
-		$dbr = wfGetDB( DB_SLAVE );
-		$res = $dbr->select( $tables, $fields, $conds, __METHOD__, [], $join_conds );
-
-		$lines = [];
-		foreach ( $res as $row ) {
-			$lines[] = Title::newFromDBkey( $row->origin )->getPrefixedText();
-			$lines[] = $row->target;
-		}
-
-		return $lines;
+		return array_merge( $pageLinks, $pageCategories );
 	}
 
 	/**
@@ -135,19 +120,18 @@ class ExportForTranslation {
 	 */
 	private static function getArticleMetadata( Title $title ) {
 		$hebrewName = $title->getFullText();
-		$metadata = 'שם הערך בעברית: ' . $hebrewName . PHP_EOL;
-		$hebrewNameKey = array_search( $hebrewName, self::$titleLines );
+		$metadata = 'שם הערך המקורי: ' . $hebrewName . PHP_EOL;
+		$targetName = self::$linkTranslations[ $hebrewName ] ?? null;
 
-		if ( $hebrewNameKey !== false ) {
-			$arabicName = self::$titleLines[ $hebrewNameKey + 1 ];
-			$metadata   .= 'שם הערך בערבית: ' . $arabicName . PHP_EOL;
+		if ( $targetName !== null ) {
+			$metadata .= 'שם הערך המתורגם: ' . $targetName . PHP_EOL;
 		} else {
-			$metadata .= 'אין לשם ערך זה תרגום קיים לערבית' . PHP_EOL;
+			$metadata .= 'אין לשם ערך זה תרגום קיים' . PHP_EOL;
 		}
 
 		$wikipage = WikiPage::newFromID( $title->getArticleID() );
 		$lastmod = $wikipage->getTimestamp();
-		$metadata .= 'תאריך עדכון אחרון בעברית: ' . $lastmod . PHP_EOL;
+		$metadata .= 'תאריך עדכון אחרון של הערך המקורי: ' . $lastmod . PHP_EOL;
 		$metadata .= 'Revision: ' . $wikipage->getLatest();
 
 		return $metadata;
@@ -158,18 +142,16 @@ class ExportForTranslation {
 	}
 
 	/**
-	 * Do replacements of Hebrew text into their Arabic translation
+	 * Do the actual replacements
 	 *
 	 * @param string $wikitext
-	 * @param array $lines
+	 * @param array $needles
+	 * @param array $replacements
 	 * @param string $type
 	 *
 	 * @return string
 	 */
-	private static function doTransformation( $wikitext, $lines, $type ) {
-		$needles = [];
-		$replacements = [];
-		self::splitReplacementsArray( $lines, $needles, $replacements );
+	private static function transform( $wikitext, $needles, $replacements, $type ) {
 		array_walk( $needles, [ __CLASS__, 'doParamReplacement' ], $type );
 		array_walk( $replacements, [ __CLASS__, 'doParamReplacement' ], "$type-replacement" );
 		$wikitext = preg_replace( $needles, $replacements, $wikitext );
@@ -195,26 +177,19 @@ class ExportForTranslation {
 	 */
 	private static function doParamReplacement( &$needle, $key, $type ) {
 		$template = self::getTemplateForType( $type );
+
+		// Only for search strings
+		if ( strpos( $type, 'replacement' ) === false ) {
+			// Escape the string, including regex delimiter
+			$needle = preg_quote( $needle, '/' );
+
+			// Ignore extra spaces, because MW ignores them when creating links
+			$needle = str_replace( ' ', '\s*', $needle );
+		}
+
+
 		$needle = sprintf( $template, $needle );
 		return true;
-	}
-
-	/**
-	 * Receive an array containing both texts and replacements
-	 * (odd are texts, even are replacements) and splits it into two arrays
-	 *
-	 * @param array $combined_array
-	 * @param array $source
-	 * @param array $target
-	 */
-	private static function splitReplacementsArray( $combined_array, &$source, &$target ) {
-		foreach ( $combined_array as $line_num => $line ) {
-			if ( $line_num % 2 === 0 ) {
-				$source[] = preg_quote( $line, '/' );
-			} else {
-				$target[] = $line;
-			}
-		}
 	}
 
 }
