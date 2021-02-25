@@ -20,6 +20,8 @@ for now, intended for translating Kol-Zchut from Hebrew to Arabic.
 This extension has a hard dependency on TranslationManager.
 
 ## Changelog
+### 0.2.1, 2021-02-25
+- Do not fall back to title translation for the categories, as it introduces inconsistencies
 ### 0.2.0, 2021-02-24
 - Refactor to only pull suggestions and language links for the
   actual links on page, not every page and suggestion in TranslationManager

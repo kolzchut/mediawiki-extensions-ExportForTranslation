@@ -17,8 +17,6 @@ class ExportForTranslation {
 		// A link starts with [, but can end with ], | or # - beyond either it's just text
 		'title'                           => '/\[\[\s*?%s\s*([\|\]#])/',
 		'title-replacement'               => '[[%s$1',
-		'category-title'                  => '/\[\[קטגוריה:\s*%s\s*\]/',
-		'category-title-replacement'      => '[[קטגוריה:%s]',
 		'title-transclusion'              => '/\{\{\s*הטמעת כותרת\s*\|\s*%s\#/',
 		'title-transclusion-replacement'  => '{{הטמעת כותרת | %s#'
 	];
@@ -72,8 +70,6 @@ class ExportForTranslation {
 		$wikitext = self::transform( $wikitext, $linkNeedles, $linkReplacements, 'title' );
 		// Do title transformation in transclusions
 		$wikitext = self::transform( $wikitext, $linkNeedles, $linkReplacements, 'title-transclusion' );
-		// Do title transformation in *category links*, using the regular titles, not the category langlinks
-		$wikitext = self::transform( $wikitext, $linkNeedles, $linkReplacements, 'category-title' );
 
 		// Add metadata as comment
 		$wikitext = self::makeHtmlComment( self::getArticleMetadata( $title ) ) . $wikitext;
