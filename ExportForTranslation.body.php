@@ -45,31 +45,34 @@ class ExportForTranslation {
 			$linkTitles
 		);
 
+		// Also get the translation for the current page
+		array_push( $linkPageIds, $wikiPage->getId() );
+
 		// Translate headers
 		$headersTargetMsg = wfMessage( 'exportfortranslation-headers-list-' . $targetLanguage );
 		if ( $headersTargetMsg->exists() ) {
-			$headersNeedles = explode(
+			$needles = explode(
 				"\n", wfMessage( 'exportfortranslation-headers-list-he' )->text()
 			);
-			$headersReplacements = explode( "\n", $headersTargetMsg->text() );
+			$replacements = explode( "\n", $headersTargetMsg->text() );
 
 			// Translate regular headers
-			$wikitext = self::transform( $wikitext, $headersNeedles, $headersReplacements, 'header' );
+			$wikitext = self::transform( $wikitext, $needles, $replacements, 'header' );
 
 			// Translate headers in transclusions
-			$wikitext = self::transform( $wikitext, $headersNeedles, $headersReplacements, 'header-transclusion' );
+			$wikitext = self::transform( $wikitext, $needles, $replacements, 'header-transclusion' );
 		}
 
 		// Translate regular links
 		self::$linkTranslations = TranslationManagerStatus::getSuggestionsByIds(
 			$targetLanguage, 'title', $linkPageIds
 		);
-		$linkNeedles = array_keys( self::$linkTranslations );
-		$linkReplacements = array_values( self::$linkTranslations );
+		$needles = array_keys( self::$linkTranslations );
+		$replacements = array_values( self::$linkTranslations );
 		// Do title transformation in links
-		$wikitext = self::transform( $wikitext, $linkNeedles, $linkReplacements, 'title' );
+		$wikitext = self::transform( $wikitext, $needles, $replacements, 'title' );
 		// Do title transformation in transclusions
-		$wikitext = self::transform( $wikitext, $linkNeedles, $linkReplacements, 'title-transclusion' );
+		$wikitext = self::transform( $wikitext, $needles, $replacements, 'title-transclusion' );
 
 		// Add metadata as comment
 		$wikitext = self::makeHtmlComment( self::getArticleMetadata( $title ) ) . $wikitext;

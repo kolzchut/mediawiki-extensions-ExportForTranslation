@@ -20,6 +20,8 @@ for now, intended for translating Kol-Zchut from Hebrew to Arabic.
 This extension has a hard dependency on TranslationManager.
 
 ## Changelog
+### 0.2.2, 2021-02-28
+- bugfix: the page's own translation was missing because of recent changes
 ### 0.2.1, 2021-02-25
 - Do not fall back to title translation for the categories, as it introduces inconsistencies
 ### 0.2.0, 2021-02-24
@@ -32,7 +34,5 @@ This extension has a hard dependency on TranslationManager.
 ### 0.1.0, unknown date
 
 ## Todo
-- Support category names translation - if there's no interlanguage link
-  for the category, try to use regular article titles?
 - Multi-lingual support
 - API module
