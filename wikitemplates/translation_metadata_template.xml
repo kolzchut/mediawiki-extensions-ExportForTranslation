@@ -1,0 +1,21 @@
+<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.11/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.11/ http://www.mediawiki.org/xml/export-0.11.xsd" version="0.11" xml:lang="he">
+  <page>
+    <title>תבנית:נתוני תרגום</title>
+    <ns>10</ns>
+    <revision>
+      <timestamp>2021-06-07T22:19:11Z</timestamp>
+      <model>wikitext</model>
+      <format>text/x-wiki</format>
+      <text bytes="571" sha1="odbuaeubhpg48hc33bz0ykf5m9ezva2" xml:space="preserve">&lt;includeonly&gt;{{שימו לב
+| class=editor-only-content hidden-print noprint
+| תאריך העדכון של הערך המקורי היה {{#time: d.m.Y h:m|{{{תאריך עדכון מקור}}} }}. [{{fullurl:he:{{{שם}}}|diff=cur&amp;oldid={{{rev_id}}} }} לחצו להשוואת שינויים מאז] }}&lt;/includeonly&gt;&lt;noinclude&gt;
+תבנית זאת מתווספת לערכים כאשר הם מיוצאים לתרגום (ע"י ההרחבה ExportForTranslation). הפרמטרים שלה הם:
+* שם
+* שם מתורגם
+* תאריך עדכון מקור
+* rev_id
+&lt;/noinclude&gt;</text>
+      <sha1>odbuaeubhpg48hc33bz0ykf5m9ezva2</sha1>
+    </revision>
+  </page>
+</mediawiki>

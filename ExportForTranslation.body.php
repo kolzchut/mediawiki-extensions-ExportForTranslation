@@ -81,7 +81,7 @@ class ExportForTranslation {
 		$wikitext = self::transform( $wikitext, $needles, $replacements, 'title-transclusion' );
 
 		// Add metadata as comment
-		$wikitext = self::makeHtmlComment( self::getArticleMetadata( $title ) ) . $wikitext;
+		$wikitext = self::getArticleMetadata( $title ) . $wikitext;
 		$wikitext .= PHP_EOL . self::makeLanguageLinkToSource( $title );
 
 		return $wikitext;
@@ -119,31 +119,26 @@ class ExportForTranslation {
 	}
 
 	/**
+	 * Return the article's metadata as a template
+	 *
 	 * @param Title $title
 	 *
 	 * @return string
 	 */
 	private static function getArticleMetadata( Title $title ) {
 		$hebrewName = $title->getFullText();
-		$metadata = 'שם הערך המקורי: ' . $hebrewName . PHP_EOL;
+		$metadata = '{{נתוני תרגום' . PHP_EOL;
+		$metadata .= '|שם=' . $hebrewName . PHP_EOL;
 		$targetName = self::$linkTranslations[ $hebrewName ] ?? null;
-
-		if ( $targetName !== null ) {
-			$metadata .= 'שם הערך המתורגם: ' . $targetName . PHP_EOL;
-		} else {
-			$metadata .= 'אין לשם ערך זה תרגום קיים' . PHP_EOL;
-		}
+		$metadata .= '|שם מתורגם=' . $targetName . PHP_EOL;
 
 		$wikipage = WikiPage::newFromID( $title->getArticleID() );
 		$lastmod = $wikipage->getTimestamp();
-		$metadata .= 'תאריך עדכון אחרון של הערך המקורי: ' . $lastmod . PHP_EOL;
-		$metadata .= 'Revision: ' . $wikipage->getLatest();
+		$metadata .= '|תאריך עדכון מקור=' . $lastmod . PHP_EOL;
+		$metadata .= '|rev_id=' . $wikipage->getLatest() . PHP_EOL;
+		$metadata .= '}}' . PHP_EOL;
 
 		return $metadata;
-	}
-
-	protected static function makeHtmlComment( $text ) {
-		return '<!--' . PHP_EOL . $text . PHP_EOL . '-->' . PHP_EOL;
 	}
 
 	/**
@@ -195,6 +190,24 @@ class ExportForTranslation {
 
 		$needle = sprintf( $template, $needle );
 		return true;
+	}
+
+	/**
+	 * This function expects the text we previously exported; it then tries to find the revision ID
+	 * inside that text.
+	 *
+	 * It should be kept compatible with the way getArticleMetadata() adds that revision ID, and
+	 * hopefully backwards-compatible as well.
+	 *
+	 * @param string $text
+	 *
+	 * @return int|null
+	 */
+	public static function getRevIdFromText( string $text ) {
+		$matches = [];
+		preg_match( '/rev_id\s*=\s*(\d+)/', $text, $matches  );
+
+		return isset( $matches[1] ) ? (int)$matches[1] : null;
 	}
 
 }
