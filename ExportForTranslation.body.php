@@ -7,6 +7,8 @@
  */
 
 use TranslationManager\TranslationManagerStatus;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Revision\SlotRecord;
 
 class ExportForTranslation {
 	private static $textTemplates = [
@@ -26,16 +28,20 @@ class ExportForTranslation {
 	/**
 	 * Load the content of a given page (by name), do our misc. transformations & add metadata
 	 *
-	 * @param $pageName
+	 * @param Title $title
+	 * @param int $rev_id
 	 *
 	 * @return null|string
 	 */
-	public static function export( $pageName ) {
+	public static function export( Title $title, $rev_id = null ) {
+		$revisionStore = MediaWikiServices::getInstance()->getRevisionStore();
+
 		$targetLanguage = $GLOBALS[ 'wgExportForTranslationDefaultLanguage' ];
 
-		$title = Title::newFromText( $pageName );
+		$revision =  $rev_id ? $revisionStore->getRevisionById( $rev_id ) : $revisionStore->getRevisionByTitle( $title );
+		$wikitext = $revision->getContent( SlotRecord::MAIN )->getText();
+
 		$wikiPage = WikiPage::factory( $title );
-		$wikitext = $wikiPage->getContent()->getNativeData();
 
 		$linkTitles = self::getPageLinks( $wikiPage );
 		$linkPageIds = array_map(

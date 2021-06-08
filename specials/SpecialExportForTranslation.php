@@ -14,13 +14,13 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	/**
 	 * Show the page to the user
 	 *
-	 * @param string $sub The subpage string argument (if any).
+	 * @param string $par The subpage string argument (if any).
 	 *  [[Special:HelloWorld/subpage]].
 	 */
-	public function execute( $sub ) {
-		if ( $sub !== null && !$this->getRequest()->wasPosted() ) {
+	public function execute( $par ) {
+		if ( $par !== null && !$this->getRequest()->wasPosted() ) {
 			// This is a GET request to export a page. Check title validity:
-			$title =  Title::newFromText( $sub );
+			$title =  Title::newFromText( $par );
 			if ( $title->exists() ) {
 				$this->sendFile( $title );
 				return;
@@ -29,7 +29,7 @@ class SpecialExportForTranslation extends FormSpecialPage {
 		$out = $this->getOutput();
 		$out->setPageTitle( $this->msg( 'exportfortranslation-special-title' ) );
 
-		parent::execute( $sub );
+		parent::execute( $par );
 	}
 
 	/**
@@ -66,7 +66,7 @@ class SpecialExportForTranslation extends FormSpecialPage {
 		$this->getOutput()->disable();
 
 		$title = ( $pageName instanceof Title ) ? $pageName : Title::newFromText( $pageName );
-		$wikitext = ExportForTranslation::export( $title->getFullText() );
+		$wikitext = ExportForTranslation::export( $title );
 		$filename = $title->getDBkey() . '-' . wfTimestampNow() . '.txt';
 		$filename_encoded = rawurlencode( $filename );
 
