@@ -34,13 +34,14 @@ or passing a page name as a subpage, e.g.: `Special:ExportForTranslation/My_Page
 - `$wgExportForTranslationNamespaces = [ NS_MAIN ]`
   Namespaces that show the "export to translation" menu option
 - `$wgExportForTranslationDefaultLanguage = 'ar'`
-  ISO 639-1 language code to use by default. Right now this is
-  just in preparation for the future.  
+  ISO 639-1 language code to use by default.
 
 ## Dependencies
 This extension has a hard dependency on TranslationManager.
 
 ## Changelog
+### 0.4.0, 2023-01-12
+- Multi-lingual support, matching extension:TranslationManager v0.8.0
 ### 0.3.0, 2021-06-08
 - Breaking change: ExportForTranslation:export() now expects a Title.
 - ExportForTranslation:export() can now also be passed a revision ID, to export a specific revision.
@@ -61,5 +62,4 @@ This extension has a hard dependency on TranslationManager.
 ### 0.1.0, unknown date
 
 ## Todo
-- Multi-lingual support
 - API module

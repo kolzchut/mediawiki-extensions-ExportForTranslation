@@ -6,11 +6,22 @@
  *       now have their "dependencies" (titles it transcludes from) marked
  */
 
-use TranslationManager\TranslationManagerStatus;
+namespace ExportForTranslation;
+
+use Config;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\SlotRecord;
+use MWException;
+use Title;
+use TranslationManager\TranslationManagerStatus;
+use WikiPage;
 
-class ExportForTranslation {
+class Exporter {
+	private const EXTENSION_NAME = 'ExportForTranslation';
+	/** @var Config	*/
+	private static Config $config;
+
+	/** @var string[] */
 	private static $textTemplates = [
 		'header'                          => '/\=\=\s*(%s)\s*\=\=/',
 		'header-replacement'              => '== %s ==',
@@ -23,36 +34,74 @@ class ExportForTranslation {
 		'title-transclusion-replacement'  => '{{הטמעת כותרת | %s#'
 	];
 
+	/** @var string[] */
 	private static array $linkTranslations = [];
+
+	/**
+	 * @return string|null
+	 * @throws MWException
+	 */
+	public static function getLanguagePreference() {
+		$services = MediaWikiServices::getInstance();
+		$userOptionsLookup = $services->getUserOptionsLookup();
+		$user = \RequestContext::getMain()->getUser();
+		$language = $userOptionsLookup->getOption( $user, 'translationmanager-language' );
+		$language = $language ?? self::getConfigVar( 'ExportForTranslationDefaultLanguage' );
+		if ( !TranslationManagerStatus::isValidLanguage( $language ) ) {
+			throw new MWException( "Invalid target language '$language' for translation export!" );
+		}
+
+		return $language;
+	}
+
+	/**
+	 * @param string $name
+	 *
+	 * @return mixed
+	 */
+	protected static function getConfigVar( $name ) {
+		if ( !isset( self::$config ) ) {
+			self::$config = MediaWikiServices::getInstance()
+				->getConfigFactory()
+				->makeConfig( self::EXTENSION_NAME );
+		}
+
+		try {
+			$value = self::$config->get( $name );
+		} catch ( \ConfigException $e ) {
+			$value = null;
+		}
+
+		return $value;
+	}
 
 	/**
 	 * Load the content of a given page (by name), do our misc. transformations & add metadata
 	 *
 	 * @param Title $title
-	 * @param int $rev_id
+	 * @param int|null $rev_id
+	 * @param string|null $lang ISO 639-1 language code
 	 *
 	 * @return null|string
 	 */
-	public static function export( Title $title, $rev_id = null ) {
+	public static function export( Title $title, $rev_id = null, $lang = null ): ?string {
 		$revisionStore = MediaWikiServices::getInstance()->getRevisionStore();
-
-		$targetLanguage = $GLOBALS[ 'wgExportForTranslationDefaultLanguage' ];
-
-		$revision =  $rev_id ? $revisionStore->getRevisionById( $rev_id ) : $revisionStore->getRevisionByTitle( $title );
+		$targetLanguage = $lang ?? self::getLanguagePreference();
+		$revision = $rev_id ? $revisionStore->getRevisionById( $rev_id ) : $revisionStore->getRevisionByTitle( $title );
 		$wikitext = $revision->getContent( SlotRecord::MAIN )->getText();
 
-		$wikiPage = WikiPage::factory( $title );
+		$wikiPage = \WikiPage::factory( $title );
 
 		$linkTitles = self::getPageLinks( $wikiPage );
 		$linkPageIds = array_map(
-			function( Title $t ) {
+			static function ( Title $t ) {
 				return $t->getArticleID();
 			},
 			$linkTitles
 		);
 
 		// Also get the translation for the current page
-		array_push( $linkPageIds, $wikiPage->getId() );
+		$linkPageIds[] = $wikiPage->getId();
 
 		// Translate headers
 		$headersTargetMsg = wfMessage( 'exportfortranslation-headers-list-' . $targetLanguage );
@@ -92,7 +141,7 @@ class ExportForTranslation {
 	 *
 	 * @return Title[]
 	 */
-	private static function getPageLinks( WikiPage $wikiPage ) {
+	private static function getPageLinks( WikiPage $wikiPage ): array {
 		$pageLinks = [];
 		$pageCategories = [];
 
@@ -100,7 +149,8 @@ class ExportForTranslation {
 
 		if ( $title->exists() ) {
 			$pageLinks = $title->getLinksFrom();
-			$pageCategories = iterator_to_array( $wikiPage->getCategories() ); // Returns TitleArray
+			// Returns TitleArray
+			$pageCategories = iterator_to_array( $wikiPage->getCategories() );
 		}
 
 		return array_merge( $pageLinks, $pageCategories );
@@ -113,7 +163,7 @@ class ExportForTranslation {
 	 *
 	 * @return string
 	 */
-	private static function makeLanguageLinkToSource( Title $title ) {
+	private static function makeLanguageLinkToSource( Title $title ): string {
 		$hebrewName = $title->getFullText();
 		return '[[he:' . $hebrewName . ']]' . PHP_EOL;
 	}
@@ -125,7 +175,7 @@ class ExportForTranslation {
 	 *
 	 * @return string
 	 */
-	private static function getArticleMetadata( Title $title ) {
+	private static function getArticleMetadata( Title $title ): string {
 		$hebrewName = $title->getFullText();
 		$metadata = '{{נתוני תרגום' . PHP_EOL;
 		$metadata .= '|שם=' . $hebrewName . PHP_EOL;
@@ -151,7 +201,7 @@ class ExportForTranslation {
 	 *
 	 * @return string
 	 */
-	private static function transform( $wikitext, $needles, $replacements, $type ) {
+	private static function transform( string $wikitext, array $needles, array $replacements, string $type ): string {
 		array_walk( $needles, [ __CLASS__, 'doParamReplacement' ], $type );
 		array_walk( $replacements, [ __CLASS__, 'doParamReplacement' ], "$type-replacement" );
 		$wikitext = preg_replace( $needles, $replacements, $wikitext );
@@ -164,18 +214,18 @@ class ExportForTranslation {
 	 *
 	 * @return string
 	 */
-	private static function getTemplateForType( $type ) {
+	private static function getTemplateForType( string $type ): string {
 		return self::$textTemplates[ $type ];
 	}
 
 	/**
-	 * @param string $needle
+	 * @param string &$needle
 	 * @param int|string $key
 	 * @param string $type
 	 *
 	 * @return bool
 	 */
-	private static function doParamReplacement( &$needle, $key, $type ) {
+	private static function doParamReplacement( string &$needle, $key, string $type ): bool {
 		$template = self::getTemplateForType( $type );
 
 		// Only for search strings
@@ -186,7 +236,6 @@ class ExportForTranslation {
 			// Ignore extra spaces, because MW ignores them when creating links
 			$needle = str_replace( ' ', '\s*', $needle );
 		}
-
 
 		$needle = sprintf( $template, $needle );
 		return true;
@@ -203,12 +252,11 @@ class ExportForTranslation {
 	 *
 	 * @return int|null
 	 */
-	public static function getRevIdFromText( string $text ) {
+	public static function getRevIdFromText( string $text ): ?int {
 		$matches = [];
-		preg_match( '/rev_id\s*=\s*(\d+)/', $text, $matches  );
+		preg_match( '/rev_id\s*=\s*(\d+)/', $text, $matches );
 
 		return isset( $matches[1] ) ? (int)$matches[1] : null;
 	}
 
 }
-
