@@ -2,22 +2,22 @@
 	"name": "ExportForTranslation",
 	"version": "0.3.0",
 	"author": [
-		"Dror S. [FFS] ([http://www.kolzchut.org.il Kol-Zchut])"
+		"Dror S. [FFS] ([https://www.kolzchut.org.il Kol-Zchut])"
 	],
 	"url": "https://github.com/kolzchut/mediawiki-extensions-ExportForTranslation",
 	"descriptionmsg": "exportfortranslation-desc",
-	"license-name": "GPL-2.0+",
+	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.29.0",
+		"MediaWiki": ">= 1.35.0",
 		"extensions": {
-			"TranslationManager": ">= 0.5.0"
+			"TranslationManager": ">= 0.8.0"
 		}
 	},
 	"AutoloadClasses": {
-		"ExportForTranslation": "ExportForTranslation.body.php",
-		"ExportForTranslationHooks": "ExportForTranslation.hooks.php",
-		"SpecialExportForTranslation": "specials/SpecialExportForTranslation.php"
+		"ExportForTranslation\\Exporter": "Exporter.php",
+		"ExportForTranslation\\Hooks": "Hooks.php",
+		"ExportForTranslation\\SpecialExportForTranslation": "specials/SpecialExportForTranslation.php"
 	},
 	"AvailableRights": [
 		"export-for-translation"
@@ -42,7 +42,7 @@
 	},
 	"Hooks": {
 		"SkinTemplateNavigation": [
-			"ExportForTranslationHooks::onSkinTemplateNavigation"
+			"ExportForTranslation\\Hooks::onSkinTemplateNavigation"
 		]
 	},
 	"MessagesDirs": {
@@ -51,7 +51,7 @@
 		]
 	},
 	"SpecialPages": {
-		"ExportForTranslation": "SpecialExportForTranslation"
+		"ExportForTranslation": "ExportForTranslation\\SpecialExportForTranslation"
 	},
 	"manifest_version": 2
 }

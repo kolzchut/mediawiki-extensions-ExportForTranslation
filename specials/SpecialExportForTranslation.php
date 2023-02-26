@@ -6,21 +6,23 @@
  * @ingroup Extensions
  */
 
+namespace ExportForTranslation;
+
+use FormSpecialPage;
+use HTMLForm;
+use Title;
+use TranslationManager\TranslationManagerStatus;
+
 class SpecialExportForTranslation extends FormSpecialPage {
 	public function __construct() {
 		parent::__construct( 'ExportForTranslation', 'export-for-translation' );
 	}
 
-	/**
-	 * Show the page to the user
-	 *
-	 * @param string $par The subpage string argument (if any).
-	 *  [[Special:HelloWorld/subpage]].
-	 */
+	/** @inheritDoc */
 	public function execute( $par ) {
 		if ( $par !== null && !$this->getRequest()->wasPosted() ) {
 			// This is a GET request to export a page. Check title validity:
-			$title =  Title::newFromText( $par );
+			$title = Title::newFromText( $par );
 			if ( $title->exists() ) {
 				$this->sendFile( $title );
 				return;
@@ -39,18 +41,15 @@ class SpecialExportForTranslation extends FormSpecialPage {
 		$form->setSubmitTextMsg( 'export-submit' );
 	}
 
-	protected function getDisplayFormat() {
+	/** @inheritDoc */
+	protected function getDisplayFormat(): string {
 		return 'ooui';
 	}
 
-	/**
-	 * @param array $formData
-	 *
-	 * @return bool|Status
-	 */
-	public function onSubmit( array $formData ) {
+	/** @inheritDoc */
+	public function onSubmit( array $data ): bool {
 		// Note: validation of title existance is already done as part of HTMLTitleTextField
-		$this->sendFile( $formData['title'] );
+		$this->sendFile( $data['title'] );
 
 		return true;
 	}
@@ -59,20 +58,30 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	 * @param Title|string $pageName
 	 *
 	 * @return bool
+	 * @throws \MWException
 	 */
-	protected function sendFile( $pageName ) {
+	protected function sendFile( $pageName ): bool {
 		$request = $this->getRequest();
 		$response = $request->response();
 		$this->getOutput()->disable();
 
+		$language = $request->getVal( 'language',
+			$this->getUser()->getOption( 'translationmanager-language' )
+		);
+		if ( !TranslationManagerStatus::isValidLanguage( $language ) ) {
+			throw new \MWException( 'Invalid target language for translation export!' );
+		}
+
 		$title = ( $pageName instanceof Title ) ? $pageName : Title::newFromText( $pageName );
-		$wikitext = ExportForTranslation::export( $title );
-		$filename = $title->getDBkey() . '-' . wfTimestampNow() . '.txt';
-		$filename_encoded = rawurlencode( $filename );
+		$wikitext = Exporter::export( $title, null, $language );
+		$filename = $title->getDBkey() . '-' . $language . '-' . wfTimestampNow() . '.txt';
+		$filenameEncoded = rawurlencode( $filename );
 
 		$response->header( "Content-type: text/plain; charset=utf-8" );
 		$response->header( "X-Robots-Tag: noindex,nofollow" );
-		$response->header( "Content-disposition: attachment;filename={$filename_encoded};filename*=UTF-8''{$filename_encoded}" );
+		$response->header(
+			"Content-disposition: attachment;filename={$filenameEncoded};filename*=UTF-8''{$filenameEncoded}"
+		);
 		$response->header( 'Cache-Control: no-cache, no-store, max-age=0, must-revalidate' );
 		$response->header( 'Pragma: no-cache' );
 		$response->header( 'Content-Length: ' . strlen( $wikitext ) );
@@ -82,15 +91,19 @@ class SpecialExportForTranslation extends FormSpecialPage {
 		return true;
 	}
 
-	protected function getGroupName() {
+	/** @inheritDoc */
+	protected function getGroupName(): string {
 		return 'pagetools';
 	}
 
-	protected function getMessagePrefix() {
+	/** @inheritDoc */
+	protected function getMessagePrefix(): string {
 		return 'exportfortranslation-special';
 	}
 
-	protected function getFormFields() {
+	/** @inheritDoc */
+	protected function getFormFields(): array {
+		$languageOptions = TranslationManagerStatus::getLanguagesForSelectField();
 		$formDescriptor = [
 			'title' => [
 				'type' => 'title',
@@ -98,7 +111,13 @@ class SpecialExportForTranslation extends FormSpecialPage {
 				'placeholder' => $this->msg( 'exportform-field-title-placeholder' )->text(),
 				'required' => true,
 				'exists' => true
-
+			],
+			'language' => [
+				'name' => 'language',
+				'type' => 'select',
+				'label-message' => 'exportform-field-language',
+				'required' => true,
+				'options' => $languageOptions
 			]
 		];
 
