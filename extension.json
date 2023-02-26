@@ -2,7 +2,7 @@
 	"name": "ExportForTranslation",
 	"version": "0.3.0",
 	"author": [
-		"Dror S. [FFS] ([http://www.kolzchut.org.il Kol-Zchut])"
+		"Dror S. [FFS] ([https://www.kolzchut.org.il Kol-Zchut])"
 	],
 	"url": "https://github.com/kolzchut/mediawiki-extensions-ExportForTranslation",
 	"descriptionmsg": "exportfortranslation-desc",
@@ -15,8 +15,8 @@
 		}
 	},
 	"AutoloadClasses": {
-		"ExportForTranslation\\Exporter": "ExportForTranslation.body.php",
-		"ExportForTranslation\\Hooks": "ExportForTranslation.hooks.php",
+		"ExportForTranslation\\Exporter": "Exporter.php",
+		"ExportForTranslation\\Hooks": "Hooks.php",
 		"ExportForTranslation\\SpecialExportForTranslation": "specials/SpecialExportForTranslation.php"
 	},
 	"AvailableRights": [

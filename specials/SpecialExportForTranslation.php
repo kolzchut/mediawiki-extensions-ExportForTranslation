@@ -79,7 +79,9 @@ class SpecialExportForTranslation extends FormSpecialPage {
 
 		$response->header( "Content-type: text/plain; charset=utf-8" );
 		$response->header( "X-Robots-Tag: noindex,nofollow" );
-		$response->header( "Content-disposition: attachment;filename={$filenameEncoded};filename*=UTF-8''{$filenameEncoded}" );
+		$response->header(
+			"Content-disposition: attachment;filename={$filenameEncoded};filename*=UTF-8''{$filenameEncoded}"
+		);
 		$response->header( 'Cache-Control: no-cache, no-store, max-age=0, must-revalidate' );
 		$response->header( 'Pragma: no-cache' );
 		$response->header( 'Content-Length: ' . strlen( $wikitext ) );
