@@ -22,7 +22,7 @@ class Exporter {
 	private static Config $config;
 
 	/** @var string[] */
-	private static $textTemplates = [
+	private static array $textTemplates = [
 		'header'                          => '/\=\=\s*(%s)\s*\=\=/',
 		'header-replacement'              => '== %s ==',
 		'header-transclusion'             => '/#%s(}}|\s*\|)/',
@@ -41,7 +41,7 @@ class Exporter {
 	 * @return string|null
 	 * @throws MWException
 	 */
-	public static function getLanguagePreference() {
+	public static function getLanguagePreference(): ?string {
 		$services = MediaWikiServices::getInstance();
 		$userOptionsLookup = $services->getUserOptionsLookup();
 		$user = \RequestContext::getMain()->getUser();
@@ -59,7 +59,7 @@ class Exporter {
 	 *
 	 * @return mixed
 	 */
-	protected static function getConfigVar( $name ) {
+	protected static function getConfigVar( string $name ) {
 		if ( !isset( self::$config ) ) {
 			self::$config = MediaWikiServices::getInstance()
 				->getConfigFactory()
@@ -76,6 +76,21 @@ class Exporter {
 	}
 
 	/**
+	 * @param array $translationArray
+	 * @param string $langCode
+	 * @return array
+	 */
+	private static function getHeadersForLanguage( array $translationArray, string $langCode ): array {
+		$result = [];
+		foreach ( $translationArray as $key => $translations ) {
+			if ( isset( $translations[$langCode] ) ) {
+				$result[] = $translations[$langCode];
+			}
+		}
+		return $result;
+	}
+
+	/**
 	 * Load the content of a given page (by name), do our misc. transformations & add metadata
 	 *
 	 * @param Title $title
@@ -83,8 +98,9 @@ class Exporter {
 	 * @param string|null $lang ISO 639-1 language code
 	 *
 	 * @return null|string
+	 * @throws MWException
 	 */
-	public static function export( Title $title, $rev_id = null, $lang = null ): ?string {
+	public static function export( Title $title, ?int $rev_id = null, ?string $lang = null ): ?string {
 		$revisionStore = MediaWikiServices::getInstance()->getRevisionStore();
 		$targetLanguage = $lang ?? self::getLanguagePreference();
 		$revision = $rev_id ? $revisionStore->getRevisionById( $rev_id ) : $revisionStore->getRevisionByTitle( $title );
@@ -103,19 +119,24 @@ class Exporter {
 		// Also get the translation for the current page
 		$linkPageIds[] = $wikiPage->getId();
 
+		$sourceLanguageCode = MediaWikiServices::getInstance()->getContentLanguage()->getCode();
+
 		// Translate headers
-		$headersTargetMsg = wfMessage( 'exportfortranslation-headers-list-' . $targetLanguage );
-		if ( $headersTargetMsg->exists() ) {
-			$needles = explode(
-				"\n", wfMessage( 'exportfortranslation-headers-list-he' )->text()
-			);
-			$replacements = explode( "\n", $headersTargetMsg->text() );
+		try {
+			$headerTranslations = HeadersJsonValidator::loadAndValidate( 'MediaWiki:ExportForTranslationHeaders.json' );
+			$needles = self::getHeadersForLanguage( $headerTranslations, $sourceLanguageCode );
+			$replacements = self::getHeadersForLanguage( $headerTranslations, $targetLanguage );
 
-			// Translate regular headers
-			$wikitext = self::transform( $wikitext, $needles, $replacements, 'header' );
+			if ( !empty( $needles ) && !empty( $replacements ) ) {
+				// Translate regular headers
+				$wikitext = self::transform( $wikitext, $needles, $replacements, 'header' );
 
-			// Translate headers in transclusions
-			$wikitext = self::transform( $wikitext, $needles, $replacements, 'header-transclusion' );
+				// Translate headers in transclusions
+				$wikitext = self::transform( $wikitext, $needles, $replacements, 'header-transclusion' );
+			}
+		} catch ( MWException $e ) {
+			// Log the error but continue without header translations
+			wfLogWarning( 'Failed to load or validate translation headers: ' . $e->getMessage() );
 		}
 
 		// Translate regular links

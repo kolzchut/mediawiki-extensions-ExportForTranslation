@@ -31,17 +31,43 @@ It is also possible to export pages using `Special:ExportForTranslation`, either
 or passing a page name as a subpage, e.g.: `Special:ExportForTranslation/My_Page_Name`.
 
 ## Configuration
-- `$wgExportForTranslationNamespaces = [ NS_MAIN ]`
-  Namespaces that show the "export to translation" menu option
-- `$wgExportForTranslationDefaultLanguage = 'ar'`
-  ISO 639-1 language code to use by default.
+The extension comes with these configuration options which can be set in `LocalSettings.php`:
+
+```php
+// Define which namespaces should include the "Export for translation" button
+$wgExportForTranslationNamespaces = [ 0, 4 ]; // Main and Project namespaces
+
+// Default target language for translation exports - ISO 639-1 language code
+$wgExportForTranslationDefaultLanguage = 'ar'; // Arabic
+```
+
+### Translation Headers
+The extension uses a JSON file at `MediaWiki:ExportForTranslationHeaders.json` to manage headers translation mappings.
+The file follows this structure:
+
+```json
+{
+  "Header1": {
+    "he": "Original header in Hebrew",
+    "ar": "Translated header in Arabic",
+    "en": "Translated header in English"
+  },
+  "Header2": {
+    "he": "Another header in Hebrew",
+    "ar": "Another header in Arabic",
+    "en": "Another header in English"
+  }
+}
+```
 
 ## Dependencies
 This extension has a hard dependency on TranslationManager.
 
 ## Changelog
+### 0.5.0, 2025-02-25
+- Change the storage for Header translations to a JSON file, `MediaWiki:ExportForTranslationHeaders.json`
 ### 0.4.0, 2023-01-12
-- Multi-lingual support, matching extension:TranslationManager v0.8.0
+- Multilingual support, matching extension:TranslationManager v0.8.0
 ### 0.3.0, 2021-06-08
 - Breaking change: ExportForTranslation:export() now expects a Title.
 - ExportForTranslation:export() can now also be passed a revision ID, to export a specific revision.

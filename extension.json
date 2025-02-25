@@ -1,6 +1,6 @@
 {
 	"name": "ExportForTranslation",
-	"version": "0.3.0",
+	"version": "0.5.0",
 	"author": [
 		"Dror S. [FFS] ([https://www.kolzchut.org.il Kol-Zchut])"
 	],
@@ -17,7 +17,8 @@
 	"AutoloadClasses": {
 		"ExportForTranslation\\Exporter": "Exporter.php",
 		"ExportForTranslation\\Hooks": "Hooks.php",
-		"ExportForTranslation\\SpecialExportForTranslation": "specials/SpecialExportForTranslation.php"
+		"ExportForTranslation\\SpecialExportForTranslation": "specials/SpecialExportForTranslation.php",
+		"ExportForTranslation\\HeadersJsonValidator": "HeadersJsonValidator.php"
 	},
 	"AvailableRights": [
 		"export-for-translation"
