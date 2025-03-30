@@ -10,15 +10,19 @@ namespace ExportForTranslation;
 
 use FormSpecialPage;
 use HTMLForm;
+use MediaWiki\MediaWikiServices;
+use MWException;
 use Title;
-use TranslationManager\TranslationManagerStatus;
+use TranslationManager\StatusItem;
 
 class SpecialExportForTranslation extends FormSpecialPage {
 	public function __construct() {
 		parent::__construct( 'ExportForTranslation', 'export-for-translation' );
 	}
 
-	/** @inheritDoc */
+	/** @inheritDoc
+	 * @throws \PermissionsError
+	 */
 	public function execute( $par ) {
 		if ( $par !== null && !$this->getRequest()->wasPosted() ) {
 			// This is a GET request to export a page. Check title validity:
@@ -58,18 +62,21 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	 * @param Title|string $pageName
 	 *
 	 * @return bool
-	 * @throws \MWException
+	 * @throws MWException
 	 */
 	protected function sendFile( $pageName ): bool {
 		$request = $this->getRequest();
 		$response = $request->response();
 		$this->getOutput()->disable();
 
+		$services = MediaWikiServices::getInstance();
+		$userOptionsLookup = $services->getUserOptionsLookup();
+
 		$language = $request->getVal( 'language',
-			$this->getUser()->getOption( 'translationmanager-language' )
+			$userOptionsLookup->getOption( $this->getUser(), 'translationmanager-language' )
 		);
-		if ( !TranslationManagerStatus::isValidLanguage( $language ) ) {
-			throw new \MWException( 'Invalid target language for translation export!' );
+		if ( !StatusItem::isValidLanguage( $language ) ) {
+			throw new MWException( 'Invalid target language for translation export!' );
 		}
 
 		$title = ( $pageName instanceof Title ) ? $pageName : Title::newFromText( $pageName );
@@ -80,7 +87,7 @@ class SpecialExportForTranslation extends FormSpecialPage {
 		$response->header( "Content-type: text/plain; charset=utf-8" );
 		$response->header( "X-Robots-Tag: noindex,nofollow" );
 		$response->header(
-			"Content-disposition: attachment;filename={$filenameEncoded};filename*=UTF-8''{$filenameEncoded}"
+			"Content-disposition: attachment;filename=$filenameEncoded;filename*=UTF-8''$filenameEncoded"
 		);
 		$response->header( 'Cache-Control: no-cache, no-store, max-age=0, must-revalidate' );
 		$response->header( 'Pragma: no-cache' );
@@ -103,7 +110,7 @@ class SpecialExportForTranslation extends FormSpecialPage {
 
 	/** @inheritDoc */
 	protected function getFormFields(): array {
-		$languageOptions = TranslationManagerStatus::getLanguagesForSelectField();
+		$languageOptions = StatusItem::getLanguagesForSelectField();
 		$formDescriptor = [
 			'title' => [
 				'type' => 'title',

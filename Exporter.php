@@ -9,11 +9,13 @@
 namespace ExportForTranslation;
 
 use Config;
+use ConfigException;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\SlotRecord;
 use MWException;
+use RequestContext;
 use Title;
-use TranslationManager\TranslationManagerStatus;
+use TranslationManager\StatusItem;
 use WikiPage;
 
 class Exporter {
@@ -44,10 +46,10 @@ class Exporter {
 	public static function getLanguagePreference(): ?string {
 		$services = MediaWikiServices::getInstance();
 		$userOptionsLookup = $services->getUserOptionsLookup();
-		$user = \RequestContext::getMain()->getUser();
+		$user = RequestContext::getMain()->getUser();
 		$language = $userOptionsLookup->getOption( $user, 'translationmanager-language' );
 		$language = $language ?? self::getConfigVar( 'ExportForTranslationDefaultLanguage' );
-		if ( !TranslationManagerStatus::isValidLanguage( $language ) ) {
+		if ( !StatusItem::isValidLanguage( $language ) ) {
 			throw new MWException( "Invalid target language '$language' for translation export!" );
 		}
 
@@ -68,7 +70,7 @@ class Exporter {
 
 		try {
 			$value = self::$config->get( $name );
-		} catch ( \ConfigException $e ) {
+		} catch ( ConfigException $e ) {
 			$value = null;
 		}
 
@@ -106,7 +108,7 @@ class Exporter {
 		$revision = $rev_id ? $revisionStore->getRevisionById( $rev_id ) : $revisionStore->getRevisionByTitle( $title );
 		$wikitext = $revision->getContent( SlotRecord::MAIN )->getText();
 
-		$wikiPage = \WikiPage::factory( $title );
+		$wikiPage = WikiPage::factory( $title );
 
 		$linkTitles = self::getPageLinks( $wikiPage );
 		$linkPageIds = array_map(
@@ -123,7 +125,7 @@ class Exporter {
 
 		// Translate headers
 		try {
-			$headerTranslations = HeadersJsonValidator::loadAndValidate( 'MediaWiki:ExportForTranslationHeaders.json' );
+			$headerTranslations = HeadersJsonValidator::loadAndValidate();
 			$needles = self::getHeadersForLanguage( $headerTranslations, $sourceLanguageCode );
 			$replacements = self::getHeadersForLanguage( $headerTranslations, $targetLanguage );
 
@@ -140,7 +142,7 @@ class Exporter {
 		}
 
 		// Translate regular links
-		self::$linkTranslations = TranslationManagerStatus::getSuggestionsByIds(
+		self::$linkTranslations = StatusItem::getSuggestionsByIds(
 			$targetLanguage, 'title', $linkPageIds
 		);
 		$needles = array_keys( self::$linkTranslations );

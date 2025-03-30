@@ -6,9 +6,6 @@ translations as well as the table provided by the TranslationManager
 extension to translate links and headers; this saves on repeat work
 and helps maintain consistency.
 
-Both TranslationManager and ExportForTranslation are single-language
-for now, intended for translating Kol-Zchut from Hebrew to Arabic.
-
 ## Usage
 The extension adds a user group, `translator`, with the user right `export-for-translation`.
 Users in this group have an additional link in their user tools, which allows exporting an article.
@@ -38,6 +35,7 @@ The extension comes with these configuration options which can be set in `LocalS
 $wgExportForTranslationNamespaces = [ 0, 4 ]; // Main and Project namespaces
 
 // Default target language for translation exports - ISO 639-1 language code
+// Overridden by the user's preference "translationmanager-language" if set
 $wgExportForTranslationDefaultLanguage = 'ar'; // Arabic
 ```
 
@@ -64,6 +62,8 @@ The file follows this structure:
 This extension has a hard dependency on TranslationManager.
 
 ## Changelog
+### 0.5.1 , 2025-03-27
+- Compatibility with Extension:TranslationManager v0.9.0
 ### 0.5.0, 2025-02-25
 - Change the storage for Header translations to a JSON file, `MediaWiki:ExportForTranslationHeaders.json`
 ### 0.4.0, 2023-01-12
