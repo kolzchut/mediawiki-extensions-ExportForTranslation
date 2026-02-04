@@ -23,10 +23,10 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	/** @inheritDoc
 	 * @throws \PermissionsError
 	 */
-	public function execute( $par ) {
-		if ( $par !== null && !$this->getRequest()->wasPosted() ) {
+	public function execute( $subPage ): void {
+		if ( $subPage !== null && !$this->getRequest()->wasPosted() ) {
 			// This is a GET request to export a page. Check title validity:
-			$title = Title::newFromText( $par );
+			$title = Title::newFromText( $subPage );
 			if ( $title->exists() ) {
 				$this->sendFile( $title );
 				return;
@@ -35,13 +35,13 @@ class SpecialExportForTranslation extends FormSpecialPage {
 		$out = $this->getOutput();
 		$out->setPageTitle( $this->msg( 'exportfortranslation-special-title' ) );
 
-		parent::execute( $par );
+		parent::execute( $subPage );
 	}
 
 	/**
 	 * @param HTMLForm $form
 	 */
-	protected function alterForm( HTMLForm $form ) {
+	protected function alterForm( HTMLForm $form ): void {
 		$form->setSubmitTextMsg( 'export-submit' );
 	}
 
@@ -64,7 +64,7 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	 * @return bool
 	 * @throws MWException
 	 */
-	protected function sendFile( $pageName ): bool {
+	protected function sendFile( Title|string $pageName ): bool {
 		$request = $this->getRequest();
 		$response = $request->response();
 		$this->getOutput()->disable();
