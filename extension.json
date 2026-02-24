@@ -1,6 +1,6 @@
 {
 	"name": "ExportForTranslation",
-	"version": "0.5.1",
+	"version": "1.0.0",
 	"author": [
 		"Dror S. [FFS] ([https://www.kolzchut.org.il Kol-Zchut])"
 	],
@@ -14,11 +14,8 @@
 			"TranslationManager": ">= 0.9.0"
 		}
 	},
-	"AutoloadClasses": {
-		"ExportForTranslation\\Exporter": "Exporter.php",
-		"ExportForTranslation\\Hooks": "Hooks.php",
-		"ExportForTranslation\\SpecialExportForTranslation": "specials/SpecialExportForTranslation.php",
-		"ExportForTranslation\\HeadersJsonValidator": "HeadersJsonValidator.php"
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\ExportForTranslation\\": "src/"
 	},
 	"AvailableRights": [
 		"export-for-translation"
@@ -27,6 +24,9 @@
 		"translator": {
 			"export-for-translation": true
 		}
+	},
+	"ConfigRegistry": {
+		"ExportForTranslation": "GlobalVarConfig::newInstance"
 	},
 	"config": {
 		"ExportForTranslationNamespaces": {
@@ -41,18 +41,32 @@
 	"ExtensionMessagesFiles": {
 		"ExportForTranslationAlias": "ExportForTranslation.i18n.alias.php"
 	},
+	"HookHandlers": {
+		"ExportForTranslationHooks": {
+			"class": "MediaWiki\\Extension\\ExportForTranslation\\Hooks",
+			"services": [
+				"MainConfig"
+			]
+		}
+	},
 	"Hooks": {
-		"SkinTemplateNavigation": [
-			"ExportForTranslation\\Hooks::onSkinTemplateNavigation"
-		]
+		"SkinTemplateNavigation::Universal": "ExportForTranslationHooks"
 	},
 	"MessagesDirs": {
 		"ExportForTranslation": [
 			"i18n"
 		]
 	},
+	"ServiceWiringFiles": [
+		"src/ServiceWiring.php"
+	],
 	"SpecialPages": {
-		"ExportForTranslation": "ExportForTranslation\\SpecialExportForTranslation"
+		"ExportForTranslation": {
+			"class": "MediaWiki\\Extension\\ExportForTranslation\\SpecialExportForTranslation",
+			"services": [
+				"ExportForTranslation.Exporter"
+			]
+		}
 	},
 	"manifest_version": 2
 }

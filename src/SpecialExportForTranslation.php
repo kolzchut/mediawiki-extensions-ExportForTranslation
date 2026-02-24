@@ -6,7 +6,7 @@
  * @ingroup Extensions
  */
 
-namespace ExportForTranslation;
+namespace MediaWiki\Extension\ExportForTranslation;
 
 use FormSpecialPage;
 use HTMLForm;
@@ -16,8 +16,12 @@ use Title;
 use TranslationManager\StatusItem;
 
 class SpecialExportForTranslation extends FormSpecialPage {
-	public function __construct() {
+
+	private Exporter $exporter;
+
+	public function __construct( Exporter $exporter ) {
 		parent::__construct( 'ExportForTranslation', 'export-for-translation' );
+		$this->exporter = $exporter;
 	}
 
 	/** @inheritDoc
@@ -80,7 +84,7 @@ class SpecialExportForTranslation extends FormSpecialPage {
 		}
 
 		$title = ( $pageName instanceof Title ) ? $pageName : Title::newFromText( $pageName );
-		$wikitext = Exporter::export( $title, null, $language );
+		$wikitext = $this->exporter->export( $title, null, $language );
 		$filename = $title->getDBkey() . '-' . $language . '-' . wfTimestampNow() . '.txt';
 		$filenameEncoded = rawurlencode( $filename );
 

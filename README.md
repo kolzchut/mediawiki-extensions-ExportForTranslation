@@ -62,6 +62,9 @@ The file follows this structure:
 This extension has a hard dependency on TranslationManager.
 
 ## Changelog
+### 1.0.0, 2026-02-24
+- Refactor to use MediaWiki service wiring and dependency injection
+- Move classes to `src/` under the `MediaWiki\Extension\ExportForTranslation` namespace
 ### 0.5.1 , 2025-03-27
 - Compatibility with Extension:TranslationManager v0.9.0
 ### 0.5.0, 2025-02-25

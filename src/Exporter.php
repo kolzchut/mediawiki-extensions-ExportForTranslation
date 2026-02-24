@@ -6,25 +6,27 @@
  *       now have their "dependencies" (titles it transcludes from) marked
  */
 
-namespace ExportForTranslation;
+namespace MediaWiki\Extension\ExportForTranslation;
 
 use Config;
 use ConfigException;
-use MediaWiki\MediaWikiServices;
+use Language;
+use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\User\UserOptionsLookup;
 use MWException;
 use RequestContext;
+use TextContent;
 use Title;
 use TranslationManager\StatusItem;
 use WikiPage;
 
 class Exporter {
 	private const EXTENSION_NAME = 'ExportForTranslation';
-	/** @var Config	*/
-	private static Config $config;
 
 	/** @var string[] */
-	private static array $textTemplates = [
+	private const TEXT_TEMPLATES = [
 		'header'                          => '/\=\=\s*(%s)\s*\=\=/',
 		'header-replacement'              => '== %s ==',
 		'header-transclusion'             => '/#%s(}}|\s*\|)/',
@@ -36,19 +38,37 @@ class Exporter {
 		'title-transclusion-replacement'  => '{{הטמעת כותרת | %s#'
 	];
 
-	/** @var string[] */
-	private static array $linkTranslations = [];
+	private Config $config;
+	private WikiPageFactory $wikiPageFactory;
+	private RevisionStore $revisionStore;
+	private Language $contentLanguage;
+	private UserOptionsLookup $userOptionsLookup;
+	private HeaderTranslationsLoader $headerTranslationsLoader;
+
+	public function __construct(
+		Config $config,
+		WikiPageFactory $wikiPageFactory,
+		RevisionStore $revisionStore,
+		Language $contentLanguage,
+		UserOptionsLookup $userOptionsLookup,
+		HeaderTranslationsLoader $headerTranslationsLoader
+	) {
+		$this->config = $config;
+		$this->wikiPageFactory = $wikiPageFactory;
+		$this->revisionStore = $revisionStore;
+		$this->contentLanguage = $contentLanguage;
+		$this->userOptionsLookup = $userOptionsLookup;
+		$this->headerTranslationsLoader = $headerTranslationsLoader;
+	}
 
 	/**
 	 * @return string|null
 	 * @throws MWException
 	 */
-	public static function getLanguagePreference(): ?string {
-		$services = MediaWikiServices::getInstance();
-		$userOptionsLookup = $services->getUserOptionsLookup();
+	public function getLanguagePreference(): ?string {
 		$user = RequestContext::getMain()->getUser();
-		$language = $userOptionsLookup->getOption( $user, 'translationmanager-language' );
-		$language = $language ?? self::getConfigVar( 'ExportForTranslationDefaultLanguage' );
+		$language = $this->userOptionsLookup->getOption( $user, 'translationmanager-language' );
+		$language = $language ?? $this->getConfigVar( 'ExportForTranslationDefaultLanguage' );
 		if ( !StatusItem::isValidLanguage( $language ) ) {
 			throw new MWException( "Invalid target language '$language' for translation export!" );
 		}
@@ -61,15 +81,9 @@ class Exporter {
 	 *
 	 * @return mixed
 	 */
-	protected static function getConfigVar( string $name ) {
-		if ( !isset( self::$config ) ) {
-			self::$config = MediaWikiServices::getInstance()
-				->getConfigFactory()
-				->makeConfig( self::EXTENSION_NAME );
-		}
-
+	protected function getConfigVar( string $name ) {
 		try {
-			$value = self::$config->get( $name );
+			$value = $this->config->get( $name );
 		} catch ( ConfigException $e ) {
 			$value = null;
 		}
@@ -82,7 +96,7 @@ class Exporter {
 	 * @param string $langCode
 	 * @return array
 	 */
-	private static function getHeadersForLanguage( array $translationArray, string $langCode ): array {
+	private function getHeadersForLanguage( array $translationArray, string $langCode ): array {
 		$result = [];
 		foreach ( $translationArray as $key => $translations ) {
 			if ( isset( $translations[$langCode] ) ) {
@@ -102,15 +116,20 @@ class Exporter {
 	 * @return null|string
 	 * @throws MWException
 	 */
-	public static function export( Title $title, ?int $rev_id = null, ?string $lang = null ): ?string {
-		$revisionStore = MediaWikiServices::getInstance()->getRevisionStore();
-		$targetLanguage = $lang ?? self::getLanguagePreference();
-		$revision = $rev_id ? $revisionStore->getRevisionById( $rev_id ) : $revisionStore->getRevisionByTitle( $title );
-		$wikitext = $revision->getContent( SlotRecord::MAIN )->getText();
+	public function export( Title $title, ?int $rev_id = null, ?string $lang = null ): ?string {
+		$targetLanguage = $lang ?? $this->getLanguagePreference();
+		$revision = $rev_id
+			? $this->revisionStore->getRevisionById( $rev_id )
+			: $this->revisionStore->getRevisionByTitle( $title );
+		$content = $revision->getContent( SlotRecord::MAIN );
+		if ( !( $content instanceof TextContent ) ) {
+			throw new MWException( "Cannot export non-text content from '{$title->getPrefixedText()}'" );
+		}
+		$wikitext = $content->getText();
 
-		$wikiPage = WikiPage::factory( $title );
+		$wikiPage = $this->wikiPageFactory->newFromTitle( $title );
 
-		$linkTitles = self::getPageLinks( $wikiPage );
+		$linkTitles = $this->getPageLinks( $wikiPage );
 		$linkPageIds = array_map(
 			static function ( Title $t ) {
 				return $t->getArticleID();
@@ -121,20 +140,20 @@ class Exporter {
 		// Also get the translation for the current page
 		$linkPageIds[] = $wikiPage->getId();
 
-		$sourceLanguageCode = MediaWikiServices::getInstance()->getContentLanguage()->getCode();
+		$sourceLanguageCode = $this->contentLanguage->getCode();
 
 		// Translate headers
 		try {
-			$headerTranslations = HeadersJsonValidator::loadAndValidate();
-			$needles = self::getHeadersForLanguage( $headerTranslations, $sourceLanguageCode );
-			$replacements = self::getHeadersForLanguage( $headerTranslations, $targetLanguage );
+			$headerTranslations = $this->headerTranslationsLoader->load();
+			$needles = $this->getHeadersForLanguage( $headerTranslations, $sourceLanguageCode );
+			$replacements = $this->getHeadersForLanguage( $headerTranslations, $targetLanguage );
 
 			if ( !empty( $needles ) && !empty( $replacements ) ) {
 				// Translate regular headers
-				$wikitext = self::transform( $wikitext, $needles, $replacements, 'header' );
+				$wikitext = $this->transform( $wikitext, $needles, $replacements, 'header' );
 
 				// Translate headers in transclusions
-				$wikitext = self::transform( $wikitext, $needles, $replacements, 'header-transclusion' );
+				$wikitext = $this->transform( $wikitext, $needles, $replacements, 'header-transclusion' );
 			}
 		} catch ( MWException $e ) {
 			// Log the error but continue without header translations
@@ -142,18 +161,18 @@ class Exporter {
 		}
 
 		// Translate regular links
-		self::$linkTranslations = StatusItem::getSuggestionsByIds(
+		$linkTranslations = StatusItem::getSuggestionsByIds(
 			$targetLanguage, 'title', $linkPageIds
 		);
-		$needles = array_keys( self::$linkTranslations );
-		$replacements = array_values( self::$linkTranslations );
+		$needles = array_keys( $linkTranslations );
+		$replacements = array_values( $linkTranslations );
 		// Do title transformation in links
-		$wikitext = self::transform( $wikitext, $needles, $replacements, 'title' );
+		$wikitext = $this->transform( $wikitext, $needles, $replacements, 'title' );
 		// Do title transformation in transclusions
-		$wikitext = self::transform( $wikitext, $needles, $replacements, 'title-transclusion' );
+		$wikitext = $this->transform( $wikitext, $needles, $replacements, 'title-transclusion' );
 
 		// Add metadata as comment
-		$wikitext = self::getArticleMetadata( $title ) . $wikitext;
+		$wikitext = $this->getArticleMetadata( $title, $linkTranslations ) . $wikitext;
 		$wikitext .= PHP_EOL . self::makeLanguageLinkToSource( $title );
 
 		return $wikitext;
@@ -164,7 +183,7 @@ class Exporter {
 	 *
 	 * @return Title[]
 	 */
-	private static function getPageLinks( WikiPage $wikiPage ): array {
+	private function getPageLinks( WikiPage $wikiPage ): array {
 		$pageLinks = [];
 		$pageCategories = [];
 
@@ -195,17 +214,18 @@ class Exporter {
 	 * Return the article's metadata as a template
 	 *
 	 * @param Title $title
+	 * @param string[] $linkTranslations
 	 *
 	 * @return string
 	 */
-	private static function getArticleMetadata( Title $title ): string {
+	private function getArticleMetadata( Title $title, array $linkTranslations ): string {
 		$hebrewName = $title->getFullText();
 		$metadata = '{{נתוני תרגום' . PHP_EOL;
 		$metadata .= '|שם=' . $hebrewName . PHP_EOL;
-		$targetName = self::$linkTranslations[ $hebrewName ] ?? null;
+		$targetName = $linkTranslations[ $hebrewName ] ?? null;
 		$metadata .= '|שם מתורגם=' . $targetName . PHP_EOL;
 
-		$wikipage = WikiPage::newFromID( $title->getArticleID() );
+		$wikipage = $this->wikiPageFactory->newFromID( $title->getArticleID() );
 		$lastmod = $wikipage->getTimestamp();
 		$metadata .= '|תאריך עדכון מקור=' . $lastmod . PHP_EOL;
 		$metadata .= '|rev_id=' . $wikipage->getLatest() . PHP_EOL;
@@ -238,7 +258,7 @@ class Exporter {
 	 * @return string
 	 */
 	private static function getTemplateForType( string $type ): string {
-		return self::$textTemplates[ $type ];
+		return self::TEXT_TEMPLATES[ $type ];
 	}
 
 	/**
@@ -252,7 +272,7 @@ class Exporter {
 		$template = self::getTemplateForType( $type );
 
 		// Only for search strings
-		if ( strpos( $type, 'replacement' ) === false ) {
+		if ( !str_contains( $type, 'replacement' ) ) {
 			// Escape the string, including regex delimiter
 			$needle = preg_quote( $needle, '/' );
 
