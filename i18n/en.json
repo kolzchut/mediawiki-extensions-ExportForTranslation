@@ -13,5 +13,7 @@
 	"group-translator": "Translators",
 	"group-translator-member": "Translator",
 	"grouppage-staff": "{{ns:project}}:Translator",
-	"right-export-for-translation": "Export pages for translation"
+	"right-export-for-translation": "Export pages for translation",
+	"exportfortranslation-error-revision-not-found": "Revision $1 could not be found, so it cannot be exported for translation.",
+	"exportfortranslation-error-page-has-no-revision": "The page \"$1\" has no revision, so it cannot be exported for translation."
 }

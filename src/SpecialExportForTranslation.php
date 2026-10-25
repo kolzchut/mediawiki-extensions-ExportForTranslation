@@ -8,6 +8,7 @@
 
 namespace MediaWiki\Extension\ExportForTranslation;
 
+use ErrorPageError;
 use FormSpecialPage;
 use HTMLForm;
 use MediaWiki\MediaWikiServices;
@@ -31,7 +32,7 @@ class SpecialExportForTranslation extends FormSpecialPage {
 		if ( $subPage !== null && !$this->getRequest()->wasPosted() ) {
 			// This is a GET request to export a page. Check title validity:
 			$title = Title::newFromText( $subPage );
-			if ( $title->exists() ) {
+			if ( $title && $title->exists() ) {
 				$this->sendFile( $title );
 				return;
 			}
@@ -67,11 +68,11 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	 *
 	 * @return bool
 	 * @throws MWException
+	 * @throws ErrorPageError if there is no revision to export
 	 */
 	protected function sendFile( Title|string $pageName ): bool {
 		$request = $this->getRequest();
 		$response = $request->response();
-		$this->getOutput()->disable();
 
 		$services = MediaWikiServices::getInstance();
 		$userOptionsLookup = $services->getUserOptionsLookup();
@@ -85,6 +86,8 @@ class SpecialExportForTranslation extends FormSpecialPage {
 
 		$title = ( $pageName instanceof Title ) ? $pageName : Title::newFromText( $pageName );
 		$wikitext = $this->exporter->export( $title, null, $language );
+		// Only now take over the response: an error page thrown above must still be able to render
+		$this->getOutput()->disable();
 		$filename = $title->getDBkey() . '-' . $language . '-' . wfTimestampNow() . '.txt';
 		$filenameEncoded = rawurlencode( $filename );
 

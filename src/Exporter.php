@@ -10,6 +10,7 @@ namespace MediaWiki\Extension\ExportForTranslation;
 
 use Config;
 use ConfigException;
+use ErrorPageError;
 use Language;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Revision\RevisionStore;
@@ -115,12 +116,23 @@ class Exporter {
 	 *
 	 * @return null|string
 	 * @throws MWException
+	 * @throws ErrorPageError if the requested revision, or any revision of the page, does not exist
 	 */
 	public function export( Title $title, ?int $rev_id = null, ?string $lang = null ): ?string {
 		$targetLanguage = $lang ?? $this->getLanguagePreference();
 		$revision = $rev_id
 			? $this->revisionStore->getRevisionById( $rev_id )
 			: $this->revisionStore->getRevisionByTitle( $title );
+		if ( $revision === null && $rev_id ) {
+			throw new ErrorPageError( 'errorpagetitle', 'exportfortranslation-error-revision-not-found',
+				[ $rev_id ]
+			);
+		}
+		if ( $revision === null ) {
+			throw new ErrorPageError( 'errorpagetitle', 'exportfortranslation-error-page-has-no-revision',
+				[ $title->getPrefixedText() ]
+			);
+		}
 		$content = $revision->getContent( SlotRecord::MAIN );
 		if ( !( $content instanceof TextContent ) ) {
 			throw new MWException( "Cannot export non-text content from '{$title->getPrefixedText()}'" );
