@@ -17,5 +17,7 @@
 	"right-export-for-translation": "ייצוא דפים לתרגום",
 	"exportfortranslation-error-revision-not-found": "גרסה $1 לא נמצאה, ולכן אי אפשר לייצא אותה לתרגום.",
 	"exportfortranslation-error-page-has-no-revision": "לדף \"$1\" אין גרסה, ולכן אי אפשר לייצא אותו לתרגום.",
-	"exportfortranslation-error-revision-wrong-page": "גרסה $1 אינה גרסה של הדף \"$2\", ולכן אי אפשר לייצא אותה לתרגום."
+	"exportfortranslation-error-revision-wrong-page": "גרסה $1 אינה גרסה של הדף \"$2\", ולכן אי אפשר לייצא אותה לתרגום.",
+	"exportfortranslation-error-revision-text-hidden": "הטקסט של גרסה $1 של הדף \"$2\" מוסתר, ולכן אי אפשר לייצא אותו לתרגום.",
+	"exportfortranslation-error-revision-not-text": "לגרסה $1 של הדף \"$2\" אין טקסט שאפשר לייצא לתרגום."
 }
