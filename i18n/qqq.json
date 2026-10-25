@@ -3,5 +3,6 @@
 		"authors": []
 	},
 	"exportfortranslation-error-revision-not-found": "Error shown when a requested revision to export does not exist.\n\nParameters:\n* $1 - the revision ID",
-	"exportfortranslation-error-page-has-no-revision": "Error shown when the page to export has no revision.\n\nParameters:\n* $1 - the page title"
+	"exportfortranslation-error-page-has-no-revision": "Error shown when the page to export has no revision.\n\nParameters:\n* $1 - the page title",
+	"exportfortranslation-error-revision-wrong-page": "Error shown when a requested revision to export belongs to a different page than the requested one.\n\nParameters:\n* $1 - the revision ID\n* $2 - the page title"
 }
