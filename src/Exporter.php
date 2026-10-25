@@ -13,6 +13,7 @@ use ConfigException;
 use ErrorPageError;
 use Language;
 use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\User\UserOptionsLookup;
@@ -117,7 +118,8 @@ class Exporter {
 	 * @return null|string
 	 * @throws MWException
 	 * @throws ErrorPageError if the requested revision, or any revision of the page, does not exist,
-	 *  or if the requested revision belongs to a different page
+	 *  if the requested revision belongs to a different page, or if the revision's text is hidden
+	 *  or is not text
 	 */
 	public function export( Title $title, ?int $rev_id = null, ?string $lang = null ): ?string {
 		$targetLanguage = $lang ?? $this->getLanguagePreference();
@@ -139,9 +141,18 @@ class Exporter {
 				[ $title->getPrefixedText() ]
 			);
 		}
+		// Hidden (revision-deleted) text is never exported: translators are not
+		// necessarily allowed to see it.
+		if ( !$revision->audienceCan( RevisionRecord::DELETED_TEXT, RevisionRecord::FOR_PUBLIC ) ) {
+			throw new ErrorPageError( 'errorpagetitle', 'exportfortranslation-error-revision-text-hidden',
+				[ $revision->getId(), $title->getPrefixedText() ]
+			);
+		}
 		$content = $revision->getContent( SlotRecord::MAIN );
 		if ( !( $content instanceof TextContent ) ) {
-			throw new MWException( "Cannot export non-text content from '{$title->getPrefixedText()}'" );
+			throw new ErrorPageError( 'errorpagetitle', 'exportfortranslation-error-revision-not-text',
+				[ $revision->getId(), $title->getPrefixedText() ]
+			);
 		}
 		$wikitext = $content->getText();
 
