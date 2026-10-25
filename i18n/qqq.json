@@ -1,7 +1,7 @@
 {
 	"@metadata": {
-		"authors": [
-		]
-	}
-
+		"authors": []
+	},
+	"exportfortranslation-error-revision-not-found": "Error shown when a requested revision to export does not exist.\n\nParameters:\n* $1 - the revision ID",
+	"exportfortranslation-error-page-has-no-revision": "Error shown when the page to export has no revision.\n\nParameters:\n* $1 - the page title"
 }

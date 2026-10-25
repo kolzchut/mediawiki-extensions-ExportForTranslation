@@ -14,5 +14,7 @@
 	"group-translator": "מתרגמים",
 	"group-translator-member": "מתרגם",
 	"grouppage-translator": "{{ns:project}}:מתרגמים",
-	"right-export-for-translation": "ייצוא דפים לתרגום"
+	"right-export-for-translation": "ייצוא דפים לתרגום",
+	"exportfortranslation-error-revision-not-found": "גרסה $1 לא נמצאה, ולכן אי אפשר לייצא אותה לתרגום.",
+	"exportfortranslation-error-page-has-no-revision": "לדף \"$1\" אין גרסה, ולכן אי אפשר לייצא אותו לתרגום."
 }
