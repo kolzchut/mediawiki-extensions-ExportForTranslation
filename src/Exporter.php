@@ -116,7 +116,8 @@ class Exporter {
 	 *
 	 * @return null|string
 	 * @throws MWException
-	 * @throws ErrorPageError if the requested revision, or any revision of the page, does not exist
+	 * @throws ErrorPageError if the requested revision, or any revision of the page, does not exist,
+	 *  or if the requested revision belongs to a different page
 	 */
 	public function export( Title $title, ?int $rev_id = null, ?string $lang = null ): ?string {
 		$targetLanguage = $lang ?? $this->getLanguagePreference();
@@ -126,6 +127,11 @@ class Exporter {
 		if ( $revision === null && $rev_id ) {
 			throw new ErrorPageError( 'errorpagetitle', 'exportfortranslation-error-revision-not-found',
 				[ $rev_id ]
+			);
+		}
+		if ( $revision !== null && $rev_id && $revision->getPageId() !== $title->getArticleID() ) {
+			throw new ErrorPageError( 'errorpagetitle', 'exportfortranslation-error-revision-wrong-page',
+				[ $rev_id, $title->getPrefixedText() ]
 			);
 		}
 		if ( $revision === null ) {
