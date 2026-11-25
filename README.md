@@ -62,6 +62,11 @@ The file follows this structure:
 This extension has a hard dependency on TranslationManager.
 
 ## Changelog
+### 1.0.1, 2026-11-25
+- Exporting through a subpage link (`Special:ExportForTranslation/My_Page_Name`) now requires
+  the `export-for-translation` right, like the form does
+- The export refuses a page the requesting user may not read
+- `Exporter::export()` takes an optional performer; it defaults to the current request's user
 ### 1.0.0, 2026-02-24
 - Refactor to use MediaWiki service wiring and dependency injection
 - Move classes to `src/` under the `MediaWiki\Extension\ExportForTranslation` namespace

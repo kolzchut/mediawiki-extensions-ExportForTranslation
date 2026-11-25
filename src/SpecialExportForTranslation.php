@@ -13,6 +13,7 @@ use FormSpecialPage;
 use HTMLForm;
 use MediaWiki\MediaWikiServices;
 use MWException;
+use PermissionsError;
 use Title;
 use TranslationManager\StatusItem;
 
@@ -26,11 +27,15 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	}
 
 	/** @inheritDoc
-	 * @throws \PermissionsError
+	 * @throws PermissionsError
 	 */
 	public function execute( $subPage ): void {
 		if ( $subPage !== null && !$this->getRequest()->wasPosted() ) {
-			// This is a GET request to export a page. Check title validity:
+			// This is a GET request to export a page. It does not go through the form,
+			// so check this special page's restriction here, before anything is sent
+			$this->setHeaders();
+			$this->checkExecutePermissions( $this->getUser() );
+			// Check title validity:
 			$title = Title::newFromText( $subPage );
 			if ( $title && $title->exists() ) {
 				$this->sendFile( $title );
@@ -69,6 +74,7 @@ class SpecialExportForTranslation extends FormSpecialPage {
 	 * @return bool
 	 * @throws MWException
 	 * @throws ErrorPageError if there is no revision to export
+	 * @throws PermissionsError if the user may not read the page
 	 */
 	protected function sendFile( Title|string $pageName ): bool {
 		$request = $this->getRequest();
@@ -85,7 +91,7 @@ class SpecialExportForTranslation extends FormSpecialPage {
 		}
 
 		$title = ( $pageName instanceof Title ) ? $pageName : Title::newFromText( $pageName );
-		$wikitext = $this->exporter->export( $title, null, $language );
+		$wikitext = $this->exporter->export( $title, null, $language, $this->getAuthority() );
 		// Only now take over the response: an error page thrown above must still be able to render
 		$this->getOutput()->disable();
 		$filename = $title->getDBkey() . '-' . $language . '-' . wfTimestampNow() . '.txt';

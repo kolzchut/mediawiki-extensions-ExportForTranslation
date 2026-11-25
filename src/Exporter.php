@@ -13,11 +13,14 @@ use ConfigException;
 use ErrorPageError;
 use Language;
 use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\Permissions\Authority;
+use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\User\UserOptionsLookup;
 use MWException;
+use PermissionsError;
 use RequestContext;
 use TextContent;
 use Title;
@@ -114,14 +117,26 @@ class Exporter {
 	 * @param Title $title
 	 * @param int|null $rev_id
 	 * @param string|null $lang ISO 639-1 language code
+	 * @param Authority|null $performer Who the export is for; defaults to the current request's user
 	 *
 	 * @return null|string
 	 * @throws MWException
+	 * @throws PermissionsError if the performer may not read the page
 	 * @throws ErrorPageError if the requested revision, or any revision of the page, does not exist,
 	 *  if the requested revision belongs to a different page, or if the revision's text is hidden
 	 *  or is not text
 	 */
-	public function export( Title $title, ?int $rev_id = null, ?string $lang = null ): ?string {
+	public function export(
+		Title $title, ?int $rev_id = null, ?string $lang = null, ?Authority $performer = null
+	): ?string {
+		// Nothing about the page is read before this: the export must never hand out
+		// a page its requester cannot read (e.g. a namespace limited to some groups)
+		$performer ??= RequestContext::getMain()->getAuthority();
+		$readStatus = PermissionStatus::newEmpty();
+		if ( !$performer->authorizeRead( 'read', $title, $readStatus ) ) {
+			throw new PermissionsError( 'read', $readStatus );
+		}
+
 		$targetLanguage = $lang ?? $this->getLanguagePreference();
 		$revision = $rev_id
 			? $this->revisionStore->getRevisionById( $rev_id )
